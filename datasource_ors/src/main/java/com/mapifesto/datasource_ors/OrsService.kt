@@ -9,7 +9,7 @@ interface OrsService {
 
     // Suspend functions
 
-    //suspend fun search(apiKey: String): SearchDto
+    suspend fun search(apiKey: String): SearchDto
 
     companion object Factory {
         fun build(): OrsService {

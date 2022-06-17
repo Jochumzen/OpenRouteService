@@ -8,9 +8,7 @@ class OrsServiceImpl(
     private val httpClient: HttpClient,
 ): OrsService {
 
-    // Methods
-
-    suspend fun search(apiKey: String): SearchDto {
+    override suspend fun search(apiKey: String): SearchDto {
         return httpClient.get {
             url("$SEARCH?api_key=$apiKey")
         }
