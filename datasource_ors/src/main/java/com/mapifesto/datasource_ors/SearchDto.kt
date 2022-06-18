@@ -7,20 +7,20 @@ import kotlinx.serialization.Serializable
 data class SearchDto(
 
      @SerialName("geocoding")
-     val geocoding: Geocoding,
+     val geocoding: GeocodingDto,
 
      @SerialName("type")
      val type: String,
 
      @SerialName("features")
-     val features: List<Feature>,
+     val features: List<FeatureDto>,
 
      @SerialName("bbox")
      val bbox: List<Double>,
 
-) {
+     ) {
      @Serializable
-     data class Geocoding (
+     data class GeocodingDto (
 
           @SerialName("version")
           val version: String,
@@ -29,20 +29,20 @@ data class SearchDto(
           val attribution: String,
 
           @SerialName("query")
-          val query: Query,
+          val query: QueryDto,
 
           @SerialName("warnings")
           val warnings: List<String>,
 
           @SerialName("engine")
-          val engine: Engine,
+          val engine: EngineDto,
 
           @SerialName("timestamp")
           val timestamp: Long,
      ) {
 
           @Serializable
-          data class Query(
+          data class QueryDto(
 
                @SerialName("text")
                val text: String,
@@ -60,7 +60,7 @@ data class SearchDto(
                val private: Boolean,
 
                @SerialName("lang")
-               val lang: Lang,
+               val lang: LangDto,
 
                @SerialName("querySize")
                val querySize: Int,
@@ -69,12 +69,12 @@ data class SearchDto(
                val parser: String,
 
                @SerialName("parsed_text")
-               val parsedText: ParsedText
+               val parsedText: ParsedTextDto
 
           ) {
 
                @Serializable
-               data class Lang(
+               data class LangDto(
 
                     @SerialName("name")
                     val name: String,
@@ -94,7 +94,7 @@ data class SearchDto(
                )
 
                @Serializable
-               data class ParsedText(
+               data class ParsedTextDto(
 
                     @SerialName("city")
                     val city: String,
@@ -108,7 +108,7 @@ data class SearchDto(
           }
 
           @Serializable
-          data class Engine(
+          data class EngineDto(
                @SerialName("name")
                val name: String,
 
@@ -122,22 +122,22 @@ data class SearchDto(
      }
 
      @Serializable
-     data class Feature(
+     data class FeatureDto(
           @SerialName("type")
           val type: String,
 
           @SerialName("geometry")
-          val geometry: Geometry,
+          val geometry: GeometryDto,
 
           @SerialName("properties")
-          val properties: Properties,
+          val properties: PropertiesDto,
 
           @SerialName("bbox")
           val bbox: List<Double>,
      ) {
 
           @Serializable
-          data class Geometry (
+          data class GeometryDto (
                @SerialName("type")
                val type: String,
 
@@ -146,7 +146,7 @@ data class SearchDto(
           )
 
           @Serializable
-          data class Properties (
+          data class PropertiesDto (
                @SerialName("id")
                val id: String,
 
@@ -247,11 +247,11 @@ data class SearchDto(
                val neighbourhoodGid: String,
 
                @SerialName("addendum")
-               val addendum: Addendum
+               val addendum: AddendumDto
           ) {
 
                @Serializable
-               data class Addendum(
+               data class AddendumDto(
 
                     @SerialName("osm")
                     val osm: List<String>

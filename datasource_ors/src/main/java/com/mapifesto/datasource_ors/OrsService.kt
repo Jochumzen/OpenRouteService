@@ -9,7 +9,24 @@ interface OrsService {
 
     // Suspend functions
 
-    suspend fun search(apiKey: String): SearchDto
+    suspend fun search(
+        apiKey: String,
+        text: String,
+        focusPointLon: String?,
+        focusPointLat: String?,
+        boundaryRectMinLon: String?,
+        boundaryRectMinLat: String?,
+        boundaryRectMaxLon: String?,
+        boundaryRectMaxLat: String?,
+        boundaryCircleLon: String?,
+        boundaryCircleLat: String?,
+        boundaryCircleRadius: String?,
+        boundaryGid: String?,
+        boundaryCountry: String?,
+        sources: String?,
+        layers: String?,
+        size: String?,
+    ): SearchDto
 
     companion object Factory {
         fun build(): OrsService {
