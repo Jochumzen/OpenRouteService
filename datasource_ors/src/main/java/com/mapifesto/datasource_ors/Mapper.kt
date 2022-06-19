@@ -1,5 +1,6 @@
 package com.mapifesto.datasource_ors
 
+import com.mapifesto.domain.LatLon
 import com.mapifesto.domain.OrsSearchItem
 import com.mapifesto.domain.OrsSearchItems
 
@@ -11,13 +12,13 @@ object Mapper {
             items =
                 dto.features.map {
                     OrsSearchItem(
-                        id = try {
-                                it.properties.id.toLong()
-                            }
-                            catch (ex: NumberFormatException) {
-                                return null
-                            },
-                        name = it.properties.name
+                        id = it.properties.id,
+                        name = it.properties.name,
+                        latLon = LatLon(
+                            lon = it.geometry.coordinates[0],
+                            lat = it.geometry.coordinates[1]
+                        ),
+                        country = it.properties.country
                     )
                 }
         )

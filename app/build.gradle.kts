@@ -71,5 +71,6 @@ dependencies {
     kapt(Hilt.compiler)
 
     implementation(project(":datasource_ors"))
+    implementation(project(":domain"))
 
 }

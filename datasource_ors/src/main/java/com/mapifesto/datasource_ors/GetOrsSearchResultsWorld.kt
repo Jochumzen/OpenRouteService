@@ -1,11 +1,10 @@
 package com.mapifesto.datasource_ors
 
 import com.mapifesto.domain.*
-import io.ktor.http.cio.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-class GetOrsSearchResultCountry(
+class GetOrsSearchResultsWorld(
     private val service: OrsService,
 ) {
     fun execute(
@@ -16,7 +15,6 @@ class GetOrsSearchResultCountry(
         boundaryCircleRadius: Double?,
         boundaryCircle: LatLon?,
         boundaryGid: String?,
-        boundaryCountry: String,
         layers: OrsLayers,
         sources: OrsSources,
         size: Int,
@@ -58,7 +56,7 @@ class GetOrsSearchResultCountry(
                 boundaryGid = boundaryGid?.let {
                     it
                 },
-                boundaryCountry = boundaryCountry,
+                boundaryCountry = null,
                 layers = layers.asString(),
                 sources = sources.asString(),
                 size = size.toString(),

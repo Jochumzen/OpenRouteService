@@ -16,7 +16,7 @@ data class SearchDto(
      val features: List<FeatureDto>,
 
      @SerialName("bbox")
-     val bbox: List<Double>,
+     val bbox: List<Double>? = null,
 
      ) {
      @Serializable
@@ -32,7 +32,7 @@ data class SearchDto(
           val query: QueryDto,
 
           @SerialName("warnings")
-          val warnings: List<String>,
+          val warnings: List<String>? = null,
 
           @SerialName("engine")
           val engine: EngineDto,
@@ -51,13 +51,16 @@ data class SearchDto(
                val size: Int,
 
                @SerialName("sources")
-               val sources: List<String>,
+               val sources: List<String>? = null,
 
                @SerialName("layers")
                val layers: List<String>,
 
                @SerialName("private")
                val private: Boolean,
+
+               @SerialName("boundary.country")
+               val boundaries: List<String>? = null,
 
                @SerialName("lang")
                val lang: LangDto,
@@ -70,6 +73,8 @@ data class SearchDto(
 
                @SerialName("parsed_text")
                val parsedText: ParsedTextDto
+
+
 
           ) {
 
@@ -97,13 +102,19 @@ data class SearchDto(
                data class ParsedTextDto(
 
                     @SerialName("city")
-                    val city: String,
+                    val city: String? = null,
 
                     @SerialName("subject")
                     val subject: String,
 
+                    @SerialName("street")
+                    val street: String? = null,
+
                     @SerialName("locality")
-                    val locality: String,
+                    val locality: String? = null,
+
+                    @SerialName("admin")
+                    val admin: String? = null,
                )
           }
 
@@ -133,7 +144,7 @@ data class SearchDto(
           val properties: PropertiesDto,
 
           @SerialName("bbox")
-          val bbox: List<Double>,
+          val bbox: List<Double>? = null,
      ) {
 
           @Serializable
@@ -166,22 +177,22 @@ data class SearchDto(
                val name: String,
 
                @SerialName("housenumber")
-               val housenumber: String,
+               val housenumber: String? = null,
 
                @SerialName("street")
-               val street: String,
+               val street: String? = null,
 
                @SerialName("postalcode")
-               val postalcode: String,
+               val postalcode: String? = null,
 
                @SerialName("confidence")
-               val confidence: Double,
+               val confidence: Double? = null,
 
                @SerialName("match_type")
-               val matchType: String,
+               val matchType: String? = null,
 
                @SerialName("distance")
-               val distance: String,
+               val distance: String? = null,
 
                @SerialName("accuracy")
                val accuracy: String,
@@ -196,10 +207,10 @@ data class SearchDto(
                val countryA: String,
 
                @SerialName("macroregion")
-               val macroregion: String,
+               val macroregion: String? = null,
 
                @SerialName("macroregion_gid")
-               val macroregionGid: String,
+               val macroregionGid: String? = null,
 
                @SerialName("region")
                val region: String,
@@ -208,28 +219,28 @@ data class SearchDto(
                val regionGid: String,
 
                @SerialName("region_a")
-               val regionA: String,
+               val regionA: String? = null,
 
                @SerialName("county")
-               val county: String,
+               val county: String? = null,
 
                @SerialName("county_gid")
-               val countyGid: String,
+               val countyGid: String? = null,
 
                @SerialName("county_a")
-               val countyA: String,
+               val countyA: String? = null,
 
                @SerialName("localadmin")
-               val localadmin: String,
+               val localadmin: String? = null,
 
                @SerialName("localadmin_gid")
-               val localadminGid: String,
+               val localadminGid: String? = null,
 
                @SerialName("locality")
-               val locality: String,
+               val locality: String? = null,
 
                @SerialName("locality_gid")
-               val localityGid: String,
+               val localityGid: String? = null,
 
                @SerialName("continent")
                val continent: String,
@@ -241,21 +252,62 @@ data class SearchDto(
                val label: String,
 
                @SerialName("neighbourhood")
-               val neighbourhood: String,
+               val neighbourhood: String? = null,
 
                @SerialName("neighbourhood_gid")
-               val neighbourhoodGid: String,
+               val neighbourhoodGid: String? = null,
 
                @SerialName("addendum")
-               val addendum: AddendumDto
+               val addendum: AddendumDto? = null
           ) {
 
                @Serializable
                data class AddendumDto(
 
                     @SerialName("osm")
-                    val osm: List<String>
-               )
+                    val osm: OsmDto? = null,
+
+                    @SerialName("geonames")
+                    val geonames: GeonamesDto? = null,
+
+                    @SerialName("concordances")
+                    val concordances: ConcordancesDto? = null,
+
+               ) {
+
+                    @Serializable
+                    data class OsmDto(
+
+                         @SerialName("operator")
+                         val operator: String? = null,
+
+                         @SerialName("wikidata")
+                         val wikidata: String? = null,
+
+                         @SerialName("website")
+                         val website: String? = null,
+
+                    )
+
+                    @Serializable
+                    data class GeonamesDto(
+
+                         @SerialName("feature_code")
+                         val featureCode: String,
+                    )
+
+                    @Serializable
+                    data class ConcordancesDto(
+
+                         @SerialName("gn:id")
+                         val gnId: Long? = null,
+
+                         @SerialName("qs_pg:id")
+                         val qsPqId: Long? = null,
+
+                    )
+
+               }
 
           }
           

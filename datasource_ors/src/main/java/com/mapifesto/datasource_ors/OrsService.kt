@@ -28,6 +28,25 @@ interface OrsService {
         size: String?,
     ): SearchDto
 
+    suspend fun autocomplete(
+        apiKey: String,
+        text: String,
+        focusPointLon: String?,
+        focusPointLat: String?,
+        boundaryRectMinLon: String?,
+        boundaryRectMinLat: String?,
+        boundaryRectMaxLon: String?,
+        boundaryRectMaxLat: String?,
+        boundaryCircleLon: String?,
+        boundaryCircleLat: String?,
+        boundaryCircleRadius: String?,
+        boundaryGid: String?,
+        boundaryCountry: String?,
+        sources: String?,
+        layers: String?,
+        size: String?,
+    ): SearchDto
+
     companion object Factory {
         fun build(): OrsService {
             return OrsServiceImpl(
@@ -35,7 +54,7 @@ interface OrsService {
                     install(JsonFeature) {
                         serializer = KotlinxSerializer(
                             kotlinx.serialization.json.Json {
-                                ignoreUnknownKeys = false
+                                ignoreUnknownKeys = true
                                 isLenient = false
                             }
                         )
