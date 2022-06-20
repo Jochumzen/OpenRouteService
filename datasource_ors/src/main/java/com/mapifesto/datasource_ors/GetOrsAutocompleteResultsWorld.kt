@@ -8,60 +8,50 @@ class GetOrsAutocompleteResultsWorld(
     private val service: OrsService,
 ) {
     fun execute(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon?,
-        boundaryRectangle: BoundingBox?,
-        boundaryCircleRadius: Double?,
-        boundaryCircle: LatLon?,
-        boundaryGid: String?,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
+        orsSearchMembers: OrsSearchMembers,
     ): Flow<OrsDataState<OrsSearchItems>> = flow {
 
         var errorMessage: String? = null
 
         val orsSearchDtoResult: SearchDto? = try {
             service.autocomplete(
-                apiKey = apiKey,
-                text = searchString,
-                focusPointLon = focus?.let {
+                apiKey = orsSearchMembers.apiKey,
+                text = orsSearchMembers.searchString,
+                focusPointLon = orsSearchMembers.focus?.let {
                     it.lon.toString()
                 },
-                focusPointLat = focus?.let {
+                focusPointLat = orsSearchMembers.focus?.let {
                     it.lat.toString()
                 },
-                boundaryRectMinLon = boundaryRectangle?.let {
+                boundaryRectMinLon = orsSearchMembers.boundaryRectangle?.let {
                     it.southWest.lon.toString()
                 },
-                boundaryRectMinLat = boundaryRectangle?.let {
+                boundaryRectMinLat = orsSearchMembers.boundaryRectangle?.let {
                     it.southWest.lat.toString()
                 },
-                boundaryRectMaxLon = boundaryRectangle?.let {
+                boundaryRectMaxLon = orsSearchMembers.boundaryRectangle?.let {
                     it.northEast.lon.toString()
                 },
-                boundaryRectMaxLat = boundaryRectangle?.let {
+                boundaryRectMaxLat = orsSearchMembers.boundaryRectangle?.let {
                     it.northEast.lat.toString()
                 },
-                boundaryCircleLon = boundaryCircle?.let {
+                boundaryCircleLon = orsSearchMembers.boundaryCircle?.let {
                     it.lon.toString()
                 },
-                boundaryCircleLat = boundaryCircle?.let {
+                boundaryCircleLat = orsSearchMembers.boundaryCircle?.let {
                     it.lat.toString()
                 },
-                boundaryCircleRadius = boundaryCircleRadius?.let {
+                boundaryCircleRadius = orsSearchMembers.boundaryCircleRadius?.let {
                     it.toString()
                 },
-                boundaryGid = boundaryGid?.let {
+                boundaryGid = orsSearchMembers.boundaryGid?.let {
                     it
                 },
                 boundaryCountry = null,
-                layers = layers.asString(),
-                sources = sources.asString(),
-                size = size.toString(),
-                language = language,
+                layers = orsSearchMembers.layers.asString(),
+                sources = orsSearchMembers.sources.asString(),
+                size = orsSearchMembers.size.toString(),
+                language = orsSearchMembers.language,
             )
         } catch (e: Exception) {
             e.printStackTrace()

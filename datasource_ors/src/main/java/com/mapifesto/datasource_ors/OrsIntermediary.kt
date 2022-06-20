@@ -1,123 +1,290 @@
 package com.mapifesto.datasource_ors
 
 import com.mapifesto.domain.*
+import com.mapifesto.domain.Helpers.findSimilarity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import java.lang.Math.log
+import kotlin.math.ln
+import kotlin.math.max
+
+data class OrsSearchMembers(
+    val apiKey: String,
+    val searchString: String,
+    val focus: LatLon? = null,
+    val boundaryRectangle: BoundingBox? = null,
+    val boundaryCircleRadius: Double? = null,
+    val boundaryCircle: LatLon? = null,
+    val boundaryGid: String? = null,
+    val boundaryCountry: String? = null,
+    val layers: OrsLayers,
+    val sources: OrsSources,
+    val size: Int,
+    val language: String,
+)
+
+data class ScoredOrsSearchItem(
+    val orsSearchItem: OrsSearchItem,
+    var searchCountryScore: Int,
+    var autocompleteCountryScore: Int,
+    var searchWorldScore: Int,
+    var autocompleteWorldScore: Int,
+    var similarity: Int,
+    var wiki: Int,
+    var distance: String,
+    var distanceScore: Int,
+) {
+    val totalScore get(): Int = searchCountryScore + autocompleteCountryScore + searchWorldScore + autocompleteWorldScore + similarity + wiki + distanceScore
+}
+
+data class ScoredOrsSearchItems(
+    val combinedList: MutableList<ScoredOrsSearchItem> = mutableListOf(),
+) {
+    //fun containsId(id: String): Boolean = combinedList.any { it.orsSearchItem.id == id}
+    private fun getItemById(id: String): ScoredOrsSearchItem? {
+        return combinedList.find { it.orsSearchItem.id == id }
+    }
+
+    fun sortByScore() {
+        combinedList.sortByDescending { it.totalScore }
+    }
+
+    fun addFromSearchCountry(searchString: String, userPosition: LatLon?, items: List<OrsSearchItem>) {
+        items.forEachIndexed { index, newItem ->
+
+            val score = 40 - index
+            val existingItem = getItemById(newItem.id)
+            val similarity = findSimilarity(searchString.lowercase(), newItem.name.lowercase())
+            val distance = Helpers.distance(userPosition, newItem.latLon)
+
+
+            if (existingItem == null) {
+                combinedList.add(
+                    ScoredOrsSearchItem(
+                        orsSearchItem = newItem,
+                        searchCountryScore = score,
+                        autocompleteCountryScore = 0,
+                        searchWorldScore = 0,
+                        autocompleteWorldScore = 0,
+                        similarity = (50*similarity).toInt() + if(similarity == 1.0) 10 else 0,
+                        wiki = if (newItem.wikiId == null) 0 else 50,
+                        distance = Helpers.distancePretty(distance),
+                        //distanceScore = if (distance == null) 0 else (5000000/distance).toInt()
+                        distanceScore = if (distance == null) 0 else (max(200 -30* ln(distance) + 30*ln(1000.0), 0.0)).toInt()
+                    )
+                )
+            } else {
+                existingItem.searchCountryScore = score
+            }
+
+        }
+    }
+
+    fun addFromAutocompleteCountry(searchString: String, userPosition: LatLon?, items: List<OrsSearchItem>) {
+        items.forEachIndexed { index, newItem ->
+
+            val score = 40 - index
+            val existingItem = getItemById(newItem.id)
+            val similarity = findSimilarity(searchString.lowercase(), newItem.name.lowercase())
+            val distance = Helpers.distance(userPosition, newItem.latLon)
+
+            if (existingItem == null) {
+                combinedList.add(
+                    ScoredOrsSearchItem(
+                        orsSearchItem = newItem,
+                        searchCountryScore = 0,
+                        autocompleteCountryScore = score,
+                        searchWorldScore = 0,
+                        autocompleteWorldScore = 0,
+                        similarity = (50*similarity).toInt() + if(similarity == 1.0) 10 else 0,
+                        wiki = if (newItem.wikiId == null) 0 else 50,
+                        distance = Helpers.distancePretty(distance),
+                        //distanceScore = if (distance == null) 0 else (5000000/distance).toInt()
+                        distanceScore = if (distance == null) 0 else (max(200 -30* ln(distance) + 30*ln(1000.0), 0.0)).toInt()
+                    )
+                )
+            } else {
+                existingItem.autocompleteCountryScore = score
+            }
+
+        }
+    }
+
+    fun addFromSearchWorld(searchString: String, userPosition: LatLon?, items: List<OrsSearchItem>) {
+        items.forEachIndexed { index, newItem ->
+
+            val score = 40 - index
+            val existingItem = getItemById(newItem.id)
+            val similarity = findSimilarity(searchString.lowercase(), newItem.name.lowercase())
+            val distance = Helpers.distance(userPosition, newItem.latLon)
+
+            if (existingItem == null) {
+                combinedList.add(
+                    ScoredOrsSearchItem(
+                        orsSearchItem = newItem,
+                        searchCountryScore = 0,
+                        autocompleteCountryScore = 0,
+                        searchWorldScore = score,
+                        autocompleteWorldScore = 0,
+                        similarity = (50*similarity).toInt() + if(similarity == 1.0) 10 else 0,
+                        wiki = if (newItem.wikiId == null) 0 else 50,
+                        distance = Helpers.distancePretty(distance),
+                        //distanceScore = if (distance == null) 0 else (5000000/distance).toInt()
+                        distanceScore = if (distance == null) 0 else (max(200 -30* ln(distance) + 30*ln(1000.0), 0.0)).toInt()
+                    )
+                )
+            } else {
+                existingItem.searchWorldScore = score
+            }
+
+        }
+    }
+
+    fun addFromAutocompleteWorld(searchString: String, userPosition: LatLon?, items: List<OrsSearchItem>) {
+        items.forEachIndexed { index, newItem ->
+
+            val score = 40 - index
+            val existingItem = getItemById(newItem.id)
+            val similarity = findSimilarity(searchString.lowercase(), newItem.name.lowercase())
+            val distance = Helpers.distance(userPosition, newItem.latLon)
+
+            if (existingItem == null) {
+                combinedList.add(
+                    ScoredOrsSearchItem(
+                        orsSearchItem = newItem,
+                        searchCountryScore = 0,
+                        autocompleteCountryScore = 0,
+                        searchWorldScore = 0,
+                        autocompleteWorldScore = score,
+                        similarity = (50*similarity).toInt() + if(similarity == 1.0) 10 else 0,
+                        wiki = if (newItem.wikiId == null) 0 else 50,
+                        distance = Helpers.distancePretty(distance),
+                        //distanceScore = if (distance == null) 0 else (5000000/distance).toInt()
+                        distanceScore = if (distance == null) 0 else (max(200 -30* ln(distance) + 30*ln(1000.0), 0.0)).toInt()
+                    )
+                )
+            } else {
+                existingItem.autocompleteWorldScore = score
+            }
+
+        }
+    }
+
+}
+
+data class CombinedSearchData(
+    val searchString: String,
+    val userPosition: LatLon?,
+    val scoredItems: ScoredOrsSearchItems = ScoredOrsSearchItems(),
+    var errorMessage: String? = null,
+    var searchCountryComplete: Boolean = false,
+    var autocompleteCountryComplete: Boolean = false,
+    var searchWorldComplete: Boolean = false,
+    var autocompleteWorldComplete: Boolean = false,
+) {
+    fun setSearchCountry(result: OrsDataState<OrsSearchItems>) {
+
+        when(result) {
+            is OrsDataState.Error -> {
+                errorMessage += result.error
+            }
+            is OrsDataState.OrsData -> {
+                searchCountryComplete = true
+                scoredItems.addFromSearchCountry(searchString, userPosition, result.data.items)
+            }
+        }
+        searchCountryComplete = true
+    }
+
+    fun setAutocompleteCountry(result: OrsDataState<OrsSearchItems>) {
+        when(result) {
+            is OrsDataState.Error -> {
+                errorMessage += result.error
+            }
+            is OrsDataState.OrsData -> {
+                autocompleteCountryComplete = true
+                scoredItems.addFromAutocompleteCountry(searchString, userPosition, result.data.items)
+            }
+        }
+        searchCountryComplete = true
+    }
+
+    fun setSearchWorld(result: OrsDataState<OrsSearchItems>) {
+        when(result) {
+            is OrsDataState.Error -> {
+                errorMessage += result.error
+            }
+            is OrsDataState.OrsData -> {
+                searchWorldComplete = true
+                scoredItems.addFromSearchWorld(searchString, userPosition, result.data.items)
+            }
+        }
+        searchCountryComplete = true
+    }
+
+    fun setAutocompleteWorld(result: OrsDataState<OrsSearchItems>) {
+        when(result) {
+            is OrsDataState.Error -> {
+                errorMessage += result.error
+            }
+            is OrsDataState.OrsData -> {
+                autocompleteWorldComplete = true
+                scoredItems.addFromAutocompleteWorld(searchString, userPosition, result.data.items)
+            }
+        }
+        searchCountryComplete = true
+    }
+
+    fun combinedSearchComplete(): Boolean = searchCountryComplete && autocompleteCountryComplete && searchWorldComplete && autocompleteWorldComplete
+}
 
 interface OrsIntermediary {
 
     fun searchCountry(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon? = null,
-        boundaryRectangle: BoundingBox? = null,
-        boundaryCircleRadius: Double? = null,
-        boundaryCircle: LatLon? = null,
-        boundaryGid: String? = null,
-        boundaryCountry: String,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
+        orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
 
     fun autocompleteCountry(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon? = null,
-        boundaryRectangle: BoundingBox? = null,
-        boundaryCircleRadius: Double? = null,
-        boundaryCircle: LatLon? = null,
-        boundaryGid: String? = null,
-        boundaryCountry: String,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
+        orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
 
     fun searchWorld(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon? = null,
-        boundaryRectangle: BoundingBox? = null,
-        boundaryCircleRadius: Double? = null,
-        boundaryCircle: LatLon? = null,
-        boundaryGid: String? = null,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
+        orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
 
     fun autocompleteWorld(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon? = null,
-        boundaryRectangle: BoundingBox? = null,
-        boundaryCircleRadius: Double? = null,
-        boundaryCircle: LatLon? = null,
-        boundaryGid: String? = null,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
+        orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
 
     fun combinedSearch(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon? = null,
-        boundaryRectangle: BoundingBox? = null,
-        boundaryCircleRadius: Double? = null,
-        boundaryCircle: LatLon? = null,
-        boundaryGid: String? = null,
-        boundaryCountry: String,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
-        callback: (OrsDataState<OrsSearchItems>) -> Unit
+        orsSearchMembers: OrsSearchMembers,
+        userPosition: LatLon?,
+        callback: (OrsDataState<ScoredOrsSearchItems>) -> Unit
     )
+
+    fun handleCombinedSearch(
+        combinedSearchData: CombinedSearchData,
+        callback: (OrsDataState<ScoredOrsSearchItems>) -> Unit
+    ) {
+
+    }
 }
 
 class OrsIntermediaryImpl: OrsIntermediary {
 
     override fun searchCountry(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon?,
-        boundaryRectangle: BoundingBox?,
-        boundaryCircleRadius: Double?,
-        boundaryCircle: LatLon?,
-        boundaryGid: String?,
-        boundaryCountry: String,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
+        orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
         val getOrsSearchResultsCountry = OrsInteractors.build().getOrsSearchResultsCountry
         getOrsSearchResultsCountry.execute(
-            apiKey = apiKey,
-            searchString = searchString,
-            focus = focus,
-            boundaryRectangle = boundaryRectangle,
-            boundaryCircleRadius = boundaryCircleRadius,
-            boundaryCircle = boundaryCircle,
-            boundaryGid = boundaryGid,
-            boundaryCountry = boundaryCountry,
-            layers = layers,
-            sources = sources,
-            size = size,
-            language = language,
+            orsSearchMembers = orsSearchMembers
         ).onEach { dataState ->
 
             callback(dataState)
@@ -126,34 +293,12 @@ class OrsIntermediaryImpl: OrsIntermediary {
     }
 
     override fun autocompleteCountry(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon?,
-        boundaryRectangle: BoundingBox?,
-        boundaryCircleRadius: Double?,
-        boundaryCircle: LatLon?,
-        boundaryGid: String?,
-        boundaryCountry: String,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
+        orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
         val getOrsAutocompleteResultsCountry = OrsInteractors.build().getOrsAutocompleteResultsCountry
         getOrsAutocompleteResultsCountry.execute(
-            apiKey = apiKey,
-            searchString = searchString,
-            focus = focus,
-            boundaryRectangle = boundaryRectangle,
-            boundaryCircleRadius = boundaryCircleRadius,
-            boundaryCircle = boundaryCircle,
-            boundaryGid = boundaryGid,
-            boundaryCountry = boundaryCountry,
-            layers = layers,
-            sources = sources,
-            size = size,
-            language = language,
+            orsSearchMembers = orsSearchMembers
         ).onEach { dataState ->
 
             callback(dataState)
@@ -162,32 +307,12 @@ class OrsIntermediaryImpl: OrsIntermediary {
     }
 
     override fun searchWorld(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon?,
-        boundaryRectangle: BoundingBox?,
-        boundaryCircleRadius: Double?,
-        boundaryCircle: LatLon?,
-        boundaryGid: String?,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
+        orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
         val getOrsSearchResultsWorld = OrsInteractors.build().getOrsSearchResultsWorld
         getOrsSearchResultsWorld.execute(
-            apiKey = apiKey,
-            searchString = searchString,
-            focus = focus,
-            boundaryRectangle = boundaryRectangle,
-            boundaryCircleRadius = boundaryCircleRadius,
-            boundaryCircle = boundaryCircle,
-            boundaryGid = boundaryGid,
-            layers = layers,
-            sources = sources,
-            size = size,
-            language = language,
+            orsSearchMembers = orsSearchMembers
         ).onEach { dataState ->
 
             callback(dataState)
@@ -196,32 +321,12 @@ class OrsIntermediaryImpl: OrsIntermediary {
     }
 
     override fun autocompleteWorld(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon?,
-        boundaryRectangle: BoundingBox?,
-        boundaryCircleRadius: Double?,
-        boundaryCircle: LatLon?,
-        boundaryGid: String?,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
+        orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
         val getOrsAutocompleteResultsWorld = OrsInteractors.build().getOrsAutocompleteResultsWorld
         getOrsAutocompleteResultsWorld.execute(
-            apiKey = apiKey,
-            searchString = searchString,
-            focus = focus,
-            boundaryRectangle = boundaryRectangle,
-            boundaryCircleRadius = boundaryCircleRadius,
-            boundaryCircle = boundaryCircle,
-            boundaryGid = boundaryGid,
-            layers = layers,
-            sources = sources,
-            size = size,
-            language = language,
+            orsSearchMembers = orsSearchMembers
         ).onEach { dataState ->
 
             callback(dataState)
@@ -230,115 +335,59 @@ class OrsIntermediaryImpl: OrsIntermediary {
     }
 
     override fun combinedSearch(
-        apiKey: String,
-        searchString: String,
-        focus: LatLon?,
-        boundaryRectangle: BoundingBox?,
-        boundaryCircleRadius: Double?,
-        boundaryCircle: LatLon?,
-        boundaryGid: String?,
-        boundaryCountry: String,
-        layers: OrsLayers,
-        sources: OrsSources,
-        size: Int,
-        language: String,
-        callback: (OrsDataState<OrsSearchItems>) -> Unit
+        orsSearchMembers: OrsSearchMembers,
+        userPosition: LatLon?,
+        callback: (OrsDataState<ScoredOrsSearchItems>) -> Unit
     ) {
 
-        val combinedList: MutableList<OrsSearchItem> = mutableListOf()
+        val combinedSearchData = CombinedSearchData(searchString = orsSearchMembers.searchString, userPosition = userPosition)
 
         searchCountry(
-            apiKey = apiKey,
-            searchString = searchString,
-            focus = focus,
-            boundaryRectangle = boundaryRectangle,
-            boundaryCircleRadius = boundaryCircleRadius,
-            boundaryCircle = boundaryCircle,
-            boundaryGid = boundaryGid,
-            boundaryCountry = boundaryCountry,
-            layers = layers,
-            sources = sources,
-            size = size,
-            language = language,
+            orsSearchMembers = orsSearchMembers
         ) {
-            when(it) {
-                is OrsDataState.Error -> {
+            combinedSearchData.setSearchCountry(it)
 
-                }
-                is OrsDataState.OrsData -> {
-                    combinedList.addAll(it.data.items)
-                }
-            }
+            if (combinedSearchData.combinedSearchComplete())
+                handleCombinedSearch(combinedSearchData, callback)
+
         }
 
         autocompleteCountry(
-            apiKey = apiKey,
-            searchString = searchString,
-            focus = focus,
-            boundaryRectangle = boundaryRectangle,
-            boundaryCircleRadius = boundaryCircleRadius,
-            boundaryCircle = boundaryCircle,
-            boundaryGid = boundaryGid,
-            boundaryCountry = boundaryCountry,
-            layers = layers,
-            sources = sources,
-            size = size,
-            language = language,
+            orsSearchMembers = orsSearchMembers
         ) {
-            when(it) {
-                is OrsDataState.Error -> {
+            combinedSearchData.setAutocompleteCountry(it)
 
-                }
-                is OrsDataState.OrsData -> {
-                    combinedList.addAll(it.data.items)
-                }
-            }
+            if (combinedSearchData.combinedSearchComplete())
+                handleCombinedSearch(combinedSearchData, callback)
         }
 
         searchWorld(
-            apiKey = apiKey,
-            searchString = searchString,
-            focus = focus,
-            boundaryRectangle = boundaryRectangle,
-            boundaryCircleRadius = boundaryCircleRadius,
-            boundaryCircle = boundaryCircle,
-            boundaryGid = boundaryGid,
-            layers = layers,
-            sources = sources,
-            size = size,
-            language = language,
+            orsSearchMembers = orsSearchMembers
         ) {
-            when(it) {
-                is OrsDataState.Error -> {
+            combinedSearchData.setSearchWorld(it)
 
-                }
-                is OrsDataState.OrsData -> {
-                    combinedList.addAll(it.data.items)
-                }
-            }
+            if (combinedSearchData.combinedSearchComplete())
+                handleCombinedSearch(combinedSearchData, callback)
         }
 
         autocompleteWorld(
-            apiKey = apiKey,
-            searchString = searchString,
-            focus = focus,
-            boundaryRectangle = boundaryRectangle,
-            boundaryCircleRadius = boundaryCircleRadius,
-            boundaryCircle = boundaryCircle,
-            boundaryGid = boundaryGid,
-            layers = layers,
-            sources = sources,
-            size = size,
-            language = language,
+            orsSearchMembers = orsSearchMembers
         ) {
-            when(it) {
-                is OrsDataState.Error -> {
+            combinedSearchData.setAutocompleteWorld(it)
 
-                }
-                is OrsDataState.OrsData -> {
-                    combinedList.addAll(it.data.items)
-                }
-            }
+            if (combinedSearchData.combinedSearchComplete())
+                handleCombinedSearch(combinedSearchData, callback)
         }
+    }
+
+    override fun handleCombinedSearch(
+        combinedSearchData: CombinedSearchData,
+        callback: (OrsDataState<ScoredOrsSearchItems>) -> Unit
+    ) {
+        if(combinedSearchData.errorMessage != null)
+            callback(OrsDataState.Error(combinedSearchData.errorMessage!!))
+        else
+            combinedSearchData.scoredItems.sortByScore()
+            callback(OrsDataState.OrsData(combinedSearchData.scoredItems))
     }
 }

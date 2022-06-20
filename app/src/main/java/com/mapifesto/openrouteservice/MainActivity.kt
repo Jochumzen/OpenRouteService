@@ -3,10 +3,7 @@ package com.mapifesto.openrouteservice
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -14,8 +11,11 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.mapifesto.datasource_ors.OrsDataState
 import com.mapifesto.datasource_ors.OrsIntermediary
+import com.mapifesto.datasource_ors.OrsSearchMembers
+import com.mapifesto.datasource_ors.ScoredOrsSearchItems
 import com.mapifesto.domain.LatLon
 import com.mapifesto.domain.OrsLayers
 import com.mapifesto.domain.OrsSearchItems
@@ -56,9 +56,12 @@ fun Compose(
     var showWhat by remember {mutableStateOf("")}
     var errorMsg by remember {mutableStateOf("")}
     var orsSearchItems by remember { mutableStateOf<OrsSearchItems?>(null) }
+    var scoredOrsSearchItems by remember { mutableStateOf<ScoredOrsSearchItems?>(null) }
     var outlinedText by remember {mutableStateOf("")}
     var languageText by remember {mutableStateOf("en-US")}
-
+    var useFocused by remember {mutableStateOf(true)}
+    var focusLat by remember {mutableStateOf("55.728392")}
+    var focusLon by remember {mutableStateOf("13.176930")}
     var page by remember { mutableStateOf("start") }
 
     val layers = OrsLayers(
@@ -95,13 +98,20 @@ fun Compose(
                     Text(text = "Ors Data source")
                     Button(
                         onClick = {
-                            page = "search everything"
+                            page = "search"
                         },
                     ) {
                             Text(text = "Search")
                     }
+                    Button(
+                        onClick = {
+                            page = "settings"
+                        },
+                    ) {
+                        Text(text = "Settings")
+                    }
                 }
-                "search everything" -> {
+                "search" -> {
                     Text(text = "Ors Data Source: Search Sweden")
                     Button(
                         onClick = {
@@ -119,28 +129,24 @@ fun Compose(
                             }
                         )
                     }
-                    Row() {
-                        Text("Lang: ")
-                        OutlinedTextField(
-                            value = languageText,
-                            onValueChange = {
-                                languageText = it
-                            }
-                        )
-                    }
+
                     Row {
                         Button(
                             onClick = {
                                 showWhat = ""
                                 errorMsg = ""
                                 orsIntermediary.searchCountry(
-                                    apiKey = apiKey,
-                                    searchString = outlinedText,
-                                    boundaryCountry = "SE",
-                                    layers = layers,
-                                    sources = sources,
-                                    size = 10,
-                                    language = languageText,
+                                    orsSearchMembers = OrsSearchMembers(
+                                        apiKey = apiKey,
+                                        searchString = outlinedText,
+                                        boundaryCountry = "SE",
+                                        layers = layers,
+                                        sources = sources,
+                                        size = 10,
+                                        language = languageText,
+                                        focus = if(useFocused) LatLon(lat = focusLat.toDouble(), lon = focusLon.toDouble()) else null
+                                    )
+
 
                                 ) {
                                     when(it) {
@@ -155,42 +161,23 @@ fun Compose(
                         ) {
                             Text("S Sw")
                         }
-                        Button(
-                            onClick = {
-                                showWhat = ""
-                                errorMsg = ""
-                                orsIntermediary.searchWorld(
-                                    apiKey = apiKey,
-                                    searchString = outlinedText,
-                                    layers = layers,
-                                    sources = sources,
-                                    size = 30,
-                                    language = languageText,
-                                ) {
-                                    when(it) {
-                                        is OrsDataState.Error -> { errorMsg = it.error}
-                                        is OrsDataState.OrsData -> {
-                                            showWhat = "World results"
-                                            orsSearchItems = it.data
-                                        }
-                                    }
-                                }
-                            }
-                        ) {
-                            Text("S W")
-                        }
+
                         Button(
                             onClick = {
                                 showWhat = ""
                                 errorMsg = ""
                                 orsIntermediary.autocompleteCountry(
-                                    apiKey = apiKey,
-                                    searchString = outlinedText,
-                                    boundaryCountry = "SE",
-                                    layers = layers,
-                                    sources = sources,
-                                    size = 10,
-                                    language = languageText,
+                                    orsSearchMembers = OrsSearchMembers(
+                                        apiKey = apiKey,
+                                        searchString = outlinedText,
+                                        boundaryCountry = "SE",
+                                        layers = layers,
+                                        sources = sources,
+                                        size = 10,
+                                        language = languageText,
+                                        focus = if(useFocused) LatLon(lat = focusLat.toDouble(), lon = focusLon.toDouble()) else null
+                                    )
+
                                 ) {
                                     when(it) {
                                         is OrsDataState.Error -> { errorMsg = it.error}
@@ -204,21 +191,49 @@ fun Compose(
                         ) {
                             Text("A Sw")
                         }
+
+                        Button(
+                            onClick = {
+                                showWhat = ""
+                                errorMsg = ""
+                                orsIntermediary.searchWorld(
+                                    orsSearchMembers = OrsSearchMembers(
+                                        apiKey = apiKey,
+                                        searchString = outlinedText,
+                                        layers = layers,
+                                        sources = sources,
+                                        size = 30,
+                                        language = languageText,
+                                        focus = if(useFocused) LatLon(lat = focusLat.toDouble(), lon = focusLon.toDouble()) else null
+                                    )
+                                ) {
+                                    when(it) {
+                                        is OrsDataState.Error -> { errorMsg = it.error}
+                                        is OrsDataState.OrsData -> {
+                                            showWhat = "World results"
+                                            orsSearchItems = it.data
+                                        }
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("S W")
+                        }
+
                         Button(
                             onClick = {
                                 showWhat = ""
                                 errorMsg = ""
                                 orsIntermediary.autocompleteWorld(
-                                    apiKey = apiKey,
-                                    searchString = outlinedText,
-/*                                    focus = LatLon(
-                                        lat = 55.0,
-                                        lon = 13.0
-                                    ),*/
-                                    layers = layers,
-                                    sources = sources,
-                                    size = 10,
-                                    language = languageText,
+                                    orsSearchMembers = OrsSearchMembers(
+                                        apiKey = apiKey,
+                                        searchString = outlinedText,
+                                        layers = layers,
+                                        sources = sources,
+                                        size = 10,
+                                        language = languageText,
+                                        focus = if(useFocused) LatLon(lat = focusLat.toDouble(), lon = focusLon.toDouble()) else null
+                                    )
                                 ) {
                                     when(it) {
                                         is OrsDataState.Error -> { errorMsg = it.error}
@@ -237,25 +252,29 @@ fun Compose(
                                 showWhat = ""
                                 errorMsg = ""
                                 orsIntermediary.combinedSearch(
-                                    apiKey = apiKey,
-                                    searchString = outlinedText,
-                                    boundaryCountry = "SE",
-                                    layers = layers,
-                                    sources = sources,
-                                    size = 10,
-                                    language = languageText,
+                                    orsSearchMembers = OrsSearchMembers(
+                                        apiKey = apiKey,
+                                        searchString = outlinedText,
+                                        boundaryCountry = "SE",
+                                        layers = layers,
+                                        sources = sources,
+                                        size = 10,
+                                        language = languageText,
+                                        focus = if(useFocused) LatLon(lat = focusLat.toDouble(), lon = focusLon.toDouble()) else null
+                                    ),
+                                    userPosition = LatLon(lat = 55.728392, lon = 13.176930)
                                 ) {
                                     when(it) {
                                         is OrsDataState.Error -> { errorMsg = it.error}
                                         is OrsDataState.OrsData -> {
-                                            showWhat = "Auto World results"
-                                            orsSearchItems = it.data
+                                            showWhat = "Combined"
+                                            scoredOrsSearchItems = it.data
                                         }
                                     }
                                 }
                             }
                         ) {
-                            Text("A Comb")
+                            Text("Comb")
                         }
                     }
 
@@ -266,14 +285,74 @@ fun Compose(
                                 LazyColumn(
                                     state = rememberLazyListState()
                                 ) {
-                                    items(orsSearchItems!!.items.map { "${it.name}, ${it.country}, ${it.latLon.print()}"}) {
+                                    items(orsSearchItems!!.items.map { "${it.name}, ${it.city?: "city?"} (${it.country}), ${it.latLon.print()}"}) {
                                         Text(it)
+                                    }
+
+                                }
+                            }
+                            "Combined" -> {
+                                LazyColumn(
+                                    state = rememberLazyListState()
+                                ) {
+/*                                    items(scoredOrsSearchItems!!.combinedList.map { "${it.orsSearchItem.name}, ${it.orsSearchItem.city?: "city"} (${it.orsSearchItem.country}), ${it.totalScore}"}) {
+                                        Text(it)
+                                    }*/
+
+                                    items(scoredOrsSearchItems!!.combinedList) {
+                                        Column() {
+                                            Text("${it.orsSearchItem.name}, ${it.orsSearchItem.city?: "city?"} (${it.orsSearchItem.country}) ${it.distance}")
+                                            Text("  ${it.searchCountryScore}+${it.autocompleteCountryScore}+${it.searchWorldScore}+${it.autocompleteWorldScore}+${it.similarity}+${it.wiki}+${it.distanceScore} = ${it.totalScore}")
+                                        }
                                     }
 
                                 }
                             }
                         }
 
+                    }
+                }
+                "settings" -> {
+                    Text(text = "Ors Data Source: Settings")
+                    Button(
+                        onClick = {
+                            page = "start"
+                        },
+                    ) {
+                        Text(text = "Start")
+                    }
+                    Row() {
+                        Text("Lang: ")
+                        OutlinedTextField(
+                            value = languageText,
+                            onValueChange = {
+                                languageText = it
+                            }
+                        )
+                    }
+                    Row() {
+                        Checkbox(checked = useFocused, onCheckedChange = {useFocused = it})
+                        Text("Use Focus")
+
+                    }
+                    Row() {
+                        OutlinedTextField(
+                            value = focusLat,
+                            onValueChange = {
+                                focusLat = it
+                            },
+                            Modifier.width(150.dp),
+                            enabled = useFocused
+
+                        )
+                        OutlinedTextField(
+                            value = focusLon,
+                            onValueChange = {
+                                focusLon = it
+                            },
+                            Modifier.width(150.dp),
+                            enabled = useFocused
+                        )
                     }
                 }
             }

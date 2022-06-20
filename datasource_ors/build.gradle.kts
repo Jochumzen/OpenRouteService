@@ -16,4 +16,5 @@ dependencies {
     implementation(Ktor.android)
     implementation(project(":domain"))
 
+    implementation("com.mapbox.mapboxsdk:mapbox-sdk-turf:6.2.0")
 }

@@ -192,7 +192,7 @@ data class SearchDto(
                val matchType: String? = null,
 
                @SerialName("distance")
-               val distance: String? = null,
+               val distance: Double? = null,
 
                @SerialName("accuracy")
                val accuracy: String,
