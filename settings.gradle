@@ -17,3 +17,4 @@ include ':app'
 include ':datasource_ors'
 include ':domain'
 project(':domain').projectDir = new File('/../MapiGanja/domain')
+

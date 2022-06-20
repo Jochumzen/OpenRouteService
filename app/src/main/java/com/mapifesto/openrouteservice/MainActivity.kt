@@ -57,7 +57,31 @@ fun Compose(
     var errorMsg by remember {mutableStateOf("")}
     var orsSearchItems by remember { mutableStateOf<OrsSearchItems?>(null) }
     var outlinedText by remember {mutableStateOf("")}
+    var languageText by remember {mutableStateOf("en-US")}
+
     var page by remember { mutableStateOf("start") }
+
+    val layers = OrsLayers(
+        address = false,
+        venue = true,
+        neighbourhood = false,
+        locality = false,
+        borough = false,
+        localadmin = false,
+        county = false,
+        macrocounty = false,
+        region = false,
+        macroregion = false,
+        country = false,
+        coarse = false,      //All administrative layers, all but venue and address
+    )
+
+    val sources = OrsSources(
+        openStreetMap = true,
+        openAddresses = false,
+        whosOnFirst = false,
+        geonames = false
+    )
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -95,6 +119,15 @@ fun Compose(
                             }
                         )
                     }
+                    Row() {
+                        Text("Lang: ")
+                        OutlinedTextField(
+                            value = languageText,
+                            onValueChange = {
+                                languageText = it
+                            }
+                        )
+                    }
                     Row {
                         Button(
                             onClick = {
@@ -104,27 +137,11 @@ fun Compose(
                                     apiKey = apiKey,
                                     searchString = outlinedText,
                                     boundaryCountry = "SE",
-                                    layers = OrsLayers(
-                                        address = false,
-                                        venue = true,
-                                        neighbourhood = false,
-                                        locality = false,
-                                        borough = false,
-                                        localadmin = false,
-                                        county = false,
-                                        macrocounty = false,
-                                        region = false,
-                                        macroregion = false,
-                                        country = false,
-                                        coarse = false,      //All administrative layers, all but venue and address
-                                    ),
-                                    sources = OrsSources(
-                                        openStreetMap = true,
-                                        openAddresses = false,
-                                        whosOnFirst = false,
-                                        geonames = false
-                                    ),
+                                    layers = layers,
+                                    sources = sources,
                                     size = 10,
+                                    language = languageText,
+
                                 ) {
                                     when(it) {
                                         is OrsDataState.Error -> { errorMsg = it.error}
@@ -136,7 +153,7 @@ fun Compose(
                                 }
                             }
                         ) {
-                            Text("S Sweden")
+                            Text("S Sw")
                         }
                         Button(
                             onClick = {
@@ -145,27 +162,10 @@ fun Compose(
                                 orsIntermediary.searchWorld(
                                     apiKey = apiKey,
                                     searchString = outlinedText,
-                                    layers = OrsLayers(
-                                        address = false,
-                                        venue = true,
-                                        neighbourhood = false,
-                                        locality = false,
-                                        borough = false,
-                                        localadmin = false,
-                                        county = false,
-                                        macrocounty = false,
-                                        region = false,
-                                        macroregion = false,
-                                        country = false,
-                                        coarse = false,      //All administrative layers, all but venue and address
-                                    ),
-                                    sources = OrsSources(
-                                        openStreetMap = true,
-                                        openAddresses = false,
-                                        whosOnFirst = false,
-                                        geonames = false
-                                    ),
-                                    size = 10,
+                                    layers = layers,
+                                    sources = sources,
+                                    size = 30,
+                                    language = languageText,
                                 ) {
                                     when(it) {
                                         is OrsDataState.Error -> { errorMsg = it.error}
@@ -177,7 +177,7 @@ fun Compose(
                                 }
                             }
                         ) {
-                            Text("S World")
+                            Text("S W")
                         }
                         Button(
                             onClick = {
@@ -187,27 +187,10 @@ fun Compose(
                                     apiKey = apiKey,
                                     searchString = outlinedText,
                                     boundaryCountry = "SE",
-                                    layers = OrsLayers(
-                                        address = false,
-                                        venue = true,
-                                        neighbourhood = false,
-                                        locality = false,
-                                        borough = false,
-                                        localadmin = false,
-                                        county = false,
-                                        macrocounty = false,
-                                        region = false,
-                                        macroregion = false,
-                                        country = false,
-                                        coarse = false,      //All administrative layers, all but venue and address
-                                    ),
-                                    sources = OrsSources(
-                                        openStreetMap = true,
-                                        openAddresses = false,
-                                        whosOnFirst = false,
-                                        geonames = false
-                                    ),
+                                    layers = layers,
+                                    sources = sources,
                                     size = 10,
+                                    language = languageText,
                                 ) {
                                     when(it) {
                                         is OrsDataState.Error -> { errorMsg = it.error}
@@ -219,7 +202,7 @@ fun Compose(
                                 }
                             }
                         ) {
-                            Text("A Sweden")
+                            Text("A Sw")
                         }
                         Button(
                             onClick = {
@@ -228,31 +211,14 @@ fun Compose(
                                 orsIntermediary.autocompleteWorld(
                                     apiKey = apiKey,
                                     searchString = outlinedText,
-                                    focus = LatLon(
+/*                                    focus = LatLon(
                                         lat = 55.0,
                                         lon = 13.0
-                                    ),
-                                    layers = OrsLayers(
-                                        address = false,
-                                        venue = true,
-                                        neighbourhood = false,
-                                        locality = false,
-                                        borough = false,
-                                        localadmin = false,
-                                        county = false,
-                                        macrocounty = false,
-                                        region = false,
-                                        macroregion = false,
-                                        country = false,
-                                        coarse = false,      //All administrative layers, all but venue and address
-                                    ),
-                                    sources = OrsSources(
-                                        openStreetMap = true,
-                                        openAddresses = false,
-                                        whosOnFirst = false,
-                                        geonames = false
-                                    ),
+                                    ),*/
+                                    layers = layers,
+                                    sources = sources,
                                     size = 10,
+                                    language = languageText,
                                 ) {
                                     when(it) {
                                         is OrsDataState.Error -> { errorMsg = it.error}
@@ -264,7 +230,32 @@ fun Compose(
                                 }
                             }
                         ) {
-                            Text("A World")
+                            Text("A W")
+                        }
+                        Button(
+                            onClick = {
+                                showWhat = ""
+                                errorMsg = ""
+                                orsIntermediary.combinedSearch(
+                                    apiKey = apiKey,
+                                    searchString = outlinedText,
+                                    boundaryCountry = "SE",
+                                    layers = layers,
+                                    sources = sources,
+                                    size = 10,
+                                    language = languageText,
+                                ) {
+                                    when(it) {
+                                        is OrsDataState.Error -> { errorMsg = it.error}
+                                        is OrsDataState.OrsData -> {
+                                            showWhat = "Auto World results"
+                                            orsSearchItems = it.data
+                                        }
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("A Comb")
                         }
                     }
 

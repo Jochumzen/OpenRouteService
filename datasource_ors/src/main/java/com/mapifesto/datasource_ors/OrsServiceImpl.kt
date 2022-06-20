@@ -26,10 +26,12 @@ class OrsServiceImpl(
         sources: String?,
         layers: String?,
         size: String?,
+        language: String,
     ): SearchDto {
 
         return httpClient.get {
             url("$SEARCH")
+            header(key = "Accept-Language", value = language)
             parameter(key = "api_key", value = apiKey)
             parameter(key = "text", value = text)
             parameter(key = "focus.point.lon", value = focusPointLon)
@@ -65,11 +67,13 @@ class OrsServiceImpl(
         boundaryCountry: String?,
         sources: String?,
         layers: String?,
-        size: String?
+        size: String?,
+        language: String,
     ): SearchDto {
 
         return httpClient.get {
             url("$AUTOCOMPLETE")
+            header(key = "Accept-Language", value = language)
             parameter(key = "api_key", value = apiKey)
             parameter(key = "text", value = text)
             parameter(key = "focus.point.lon", value = focusPointLon)
@@ -86,8 +90,6 @@ class OrsServiceImpl(
             parameter(key = "sources", value = sources)
             parameter(key = "layers", value = layers)
             parameter(key = "size", value = size)
-
-            //url("https://api.openrouteservice.org/geocode/autocomplete?api_key=5b3ce3597851110001cf6248782b9145cbb64ba2a7b5962e1023c1de&text=Eiffel%20Tower&sources=openstreetmap&layers=venue")
 
         }
 

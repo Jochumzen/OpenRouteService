@@ -19,6 +19,7 @@ class GetOrsAutocompleteResultsCountry(
         layers: OrsLayers,
         sources: OrsSources,
         size: Int,
+        language: String,
     ): Flow<OrsDataState<OrsSearchItems>> = flow {
 
         var errorMessage: String? = null
@@ -61,6 +62,7 @@ class GetOrsAutocompleteResultsCountry(
                 layers = layers.asString(),
                 sources = sources.asString(),
                 size = size.toString(),
+                language = language,
             )
         } catch (e: Exception) {
             e.printStackTrace()

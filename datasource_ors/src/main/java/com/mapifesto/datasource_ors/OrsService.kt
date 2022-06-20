@@ -26,6 +26,7 @@ interface OrsService {
         sources: String?,
         layers: String?,
         size: String?,
+        language: String,
     ): SearchDto
 
     suspend fun autocomplete(
@@ -45,6 +46,7 @@ interface OrsService {
         sources: String?,
         layers: String?,
         size: String?,
+        language: String,
     ): SearchDto
 
     companion object Factory {
