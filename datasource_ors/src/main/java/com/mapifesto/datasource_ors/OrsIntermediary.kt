@@ -7,8 +7,70 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import java.lang.Math.log
+import kotlin.math.exp
 import kotlin.math.ln
 import kotlin.math.max
+
+data class OrsScoreParameters(
+    private val searchCountryScoreIntercept: Int = 40,
+    private val searchCountryScoreSlope: Int = 1,
+    private val autocompleteCountryScoreIntercept: Int = 40,
+    private val autocompleteCountryScoreSlope: Int = 1,
+    private val searchWorldScoreIntercept: Int = 40,
+    private val searchWorldScoreSlope: Int = 1,
+    private val autocompleteWorldScoreIntercept: Int = 40,
+    private val autocompleteWorldScoreSlope: Int = 1,
+    private val similarityFactor: Int = 50,
+    private val exactMatchBonus: Int = 10,
+    private val wikiBonus: Int = 50,
+    private val distanceIntercept: Int = 200,
+    private val distanceSlope: Int = 30
+) {
+    fun searchCountryScore(orsRank: Int): Int =  searchCountryScoreIntercept - searchCountryScoreSlope*orsRank
+    fun autocompleteCountryScore(orsRank: Int): Int =  autocompleteCountryScoreIntercept - autocompleteCountryScoreSlope*orsRank
+    fun searchWorldScore(orsRank: Int): Int =  searchWorldScoreIntercept - searchWorldScoreSlope*orsRank
+    fun autocompleteWorldScore(orsRank: Int): Int =  autocompleteWorldScoreIntercept - autocompleteWorldScoreSlope*orsRank
+    fun similarityScore(searchString: String, name: String): Int {
+        val similarity = findSimilarity(searchString.lowercase(), name.lowercase())
+        return (similarityFactor*similarity).toInt() + if(similarity == 1.0) exactMatchBonus else 0
+    }
+    fun wikiScore(item: OrsSearchItem): Int = if (item.wikiId == null) 0 else wikiBonus
+    fun distanceScore(distance: Double?): Int = if (distance == null) 0 else (max(200 -30* ln(distance) + 30*ln(1000.0), 0.0)).toInt()
+    fun distanceZeroScore(): Int = exp(distanceIntercept.toDouble()/distanceSlope).toInt()
+    companion object {
+        fun factory(
+            searchCountryScoreIntercept: Int,
+            searchCountryScoreSlope: Int,
+            autocompleteCountryScoreIntercept: Int,
+            autocompleteCountryScoreSlope: Int = 1,
+            searchWorldScoreIntercept: Int,
+            searchWorldScoreSlope: Int,
+            autocompleteWorldScoreIntercept: Int,
+            autocompleteWorldScoreSlope: Int,
+            similarityFactor: Int,
+            exactMatchBonus: Int,
+            wikiBonus: Int,
+            distanceIntercept: Int,
+            distanceSlope: Int,
+        ): OrsScoreParameters {
+            return OrsScoreParameters(
+                searchCountryScoreIntercept = searchCountryScoreIntercept,
+                searchCountryScoreSlope = searchCountryScoreSlope,
+                autocompleteCountryScoreIntercept = autocompleteCountryScoreIntercept,
+                autocompleteCountryScoreSlope = autocompleteCountryScoreSlope,
+                searchWorldScoreIntercept = searchWorldScoreIntercept,
+                searchWorldScoreSlope = searchWorldScoreSlope,
+                autocompleteWorldScoreIntercept = autocompleteWorldScoreIntercept,
+                autocompleteWorldScoreSlope = autocompleteWorldScoreSlope,
+                similarityFactor = similarityFactor,
+                exactMatchBonus = exactMatchBonus,
+                wikiBonus = wikiBonus,
+                distanceIntercept = distanceIntercept,
+                distanceSlope = distanceSlope,
+            )
+        }
+    }
+}
 
 data class OrsSearchMembers(
     val apiKey: String,
@@ -21,7 +83,10 @@ data class OrsSearchMembers(
     val boundaryCountry: String? = null,
     val layers: OrsLayers,
     val sources: OrsSources,
-    val size: Int,
+    val sizeSearchCountry: Int,
+    val sizeAutoCompleteCountry: Int,
+    val sizeSearchWorld: Int,
+    val sizeAutoCompleteWorld: Int,
     val language: String,
 )
 
@@ -31,10 +96,10 @@ data class ScoredOrsSearchItem(
     var autocompleteCountryScore: Int,
     var searchWorldScore: Int,
     var autocompleteWorldScore: Int,
-    var similarity: Int,
-    var wiki: Int,
-    var distance: String,
-    var distanceScore: Int,
+    val similarity: Int,
+    val wiki: Int,
+    val distance: String,
+    val distanceScore: Int,
 ) {
     val totalScore get(): Int = searchCountryScore + autocompleteCountryScore + searchWorldScore + autocompleteWorldScore + similarity + wiki + distanceScore
 }
@@ -42,7 +107,7 @@ data class ScoredOrsSearchItem(
 data class ScoredOrsSearchItems(
     val combinedList: MutableList<ScoredOrsSearchItem> = mutableListOf(),
 ) {
-    //fun containsId(id: String): Boolean = combinedList.any { it.orsSearchItem.id == id}
+
     private fun getItemById(id: String): ScoredOrsSearchItem? {
         return combinedList.find { it.orsSearchItem.id == id }
     }
@@ -51,43 +116,49 @@ data class ScoredOrsSearchItems(
         combinedList.sortByDescending { it.totalScore }
     }
 
-    fun addFromSearchCountry(searchString: String, userPosition: LatLon?, items: List<OrsSearchItem>) {
+    fun addFromSearchCountry(
+        searchString: String,
+        userPosition: LatLon?,
+        items: List<OrsSearchItem>,
+        orsScoreParameters: OrsScoreParameters,
+    ) {
         items.forEachIndexed { index, newItem ->
 
-            val score = 40 - index
+            val orsRankingScore = orsScoreParameters.searchCountryScore(index)
             val existingItem = getItemById(newItem.id)
-            val similarity = findSimilarity(searchString.lowercase(), newItem.name.lowercase())
             val distance = Helpers.distance(userPosition, newItem.latLon)
-
 
             if (existingItem == null) {
                 combinedList.add(
                     ScoredOrsSearchItem(
                         orsSearchItem = newItem,
-                        searchCountryScore = score,
+                        searchCountryScore = orsRankingScore,
                         autocompleteCountryScore = 0,
                         searchWorldScore = 0,
                         autocompleteWorldScore = 0,
-                        similarity = (50*similarity).toInt() + if(similarity == 1.0) 10 else 0,
-                        wiki = if (newItem.wikiId == null) 0 else 50,
+                        similarity = orsScoreParameters.similarityScore(searchString, newItem.name),
+                        wiki = orsScoreParameters.wikiScore(newItem),
                         distance = Helpers.distancePretty(distance),
-                        //distanceScore = if (distance == null) 0 else (5000000/distance).toInt()
-                        distanceScore = if (distance == null) 0 else (max(200 -30* ln(distance) + 30*ln(1000.0), 0.0)).toInt()
+                        distanceScore = orsScoreParameters.distanceScore(distance)
                     )
                 )
             } else {
-                existingItem.searchCountryScore = score
+                existingItem.searchCountryScore = orsRankingScore
             }
 
         }
     }
 
-    fun addFromAutocompleteCountry(searchString: String, userPosition: LatLon?, items: List<OrsSearchItem>) {
+    fun addFromAutocompleteCountry(
+        searchString: String,
+        userPosition: LatLon?,
+        items: List<OrsSearchItem>,
+        orsScoreParameters: OrsScoreParameters,
+    ) {
         items.forEachIndexed { index, newItem ->
 
-            val score = 40 - index
+            val orsRankingScore = orsScoreParameters.autocompleteCountryScore(index)
             val existingItem = getItemById(newItem.id)
-            val similarity = findSimilarity(searchString.lowercase(), newItem.name.lowercase())
             val distance = Helpers.distance(userPosition, newItem.latLon)
 
             if (existingItem == null) {
@@ -95,59 +166,32 @@ data class ScoredOrsSearchItems(
                     ScoredOrsSearchItem(
                         orsSearchItem = newItem,
                         searchCountryScore = 0,
-                        autocompleteCountryScore = score,
+                        autocompleteCountryScore = orsRankingScore,
                         searchWorldScore = 0,
                         autocompleteWorldScore = 0,
-                        similarity = (50*similarity).toInt() + if(similarity == 1.0) 10 else 0,
-                        wiki = if (newItem.wikiId == null) 0 else 50,
+                        similarity = orsScoreParameters.similarityScore(searchString, newItem.name),
+                        wiki = orsScoreParameters.wikiScore(newItem),
                         distance = Helpers.distancePretty(distance),
-                        //distanceScore = if (distance == null) 0 else (5000000/distance).toInt()
-                        distanceScore = if (distance == null) 0 else (max(200 -30* ln(distance) + 30*ln(1000.0), 0.0)).toInt()
+                        distanceScore = orsScoreParameters.distanceScore(distance)
                     )
                 )
             } else {
-                existingItem.autocompleteCountryScore = score
+                existingItem.autocompleteCountryScore = orsRankingScore
             }
 
         }
     }
 
-    fun addFromSearchWorld(searchString: String, userPosition: LatLon?, items: List<OrsSearchItem>) {
+    fun addFromSearchWorld(
+        searchString: String,
+        userPosition: LatLon?,
+        items: List<OrsSearchItem>,
+        orsScoreParameters: OrsScoreParameters,
+    ) {
         items.forEachIndexed { index, newItem ->
 
-            val score = 40 - index
+            val orsRankingScore = orsScoreParameters.searchWorldScore(index)
             val existingItem = getItemById(newItem.id)
-            val similarity = findSimilarity(searchString.lowercase(), newItem.name.lowercase())
-            val distance = Helpers.distance(userPosition, newItem.latLon)
-
-            if (existingItem == null) {
-                combinedList.add(
-                    ScoredOrsSearchItem(
-                        orsSearchItem = newItem,
-                        searchCountryScore = 0,
-                        autocompleteCountryScore = 0,
-                        searchWorldScore = score,
-                        autocompleteWorldScore = 0,
-                        similarity = (50*similarity).toInt() + if(similarity == 1.0) 10 else 0,
-                        wiki = if (newItem.wikiId == null) 0 else 50,
-                        distance = Helpers.distancePretty(distance),
-                        //distanceScore = if (distance == null) 0 else (5000000/distance).toInt()
-                        distanceScore = if (distance == null) 0 else (max(200 -30* ln(distance) + 30*ln(1000.0), 0.0)).toInt()
-                    )
-                )
-            } else {
-                existingItem.searchWorldScore = score
-            }
-
-        }
-    }
-
-    fun addFromAutocompleteWorld(searchString: String, userPosition: LatLon?, items: List<OrsSearchItem>) {
-        items.forEachIndexed { index, newItem ->
-
-            val score = 40 - index
-            val existingItem = getItemById(newItem.id)
-            val similarity = findSimilarity(searchString.lowercase(), newItem.name.lowercase())
             val distance = Helpers.distance(userPosition, newItem.latLon)
 
             if (existingItem == null) {
@@ -156,17 +200,49 @@ data class ScoredOrsSearchItems(
                         orsSearchItem = newItem,
                         searchCountryScore = 0,
                         autocompleteCountryScore = 0,
-                        searchWorldScore = 0,
-                        autocompleteWorldScore = score,
-                        similarity = (50*similarity).toInt() + if(similarity == 1.0) 10 else 0,
-                        wiki = if (newItem.wikiId == null) 0 else 50,
+                        searchWorldScore = orsRankingScore,
+                        autocompleteWorldScore = 0,
+                        similarity = orsScoreParameters.similarityScore(searchString, newItem.name),
+                        wiki = orsScoreParameters.wikiScore(newItem),
                         distance = Helpers.distancePretty(distance),
-                        //distanceScore = if (distance == null) 0 else (5000000/distance).toInt()
-                        distanceScore = if (distance == null) 0 else (max(200 -30* ln(distance) + 30*ln(1000.0), 0.0)).toInt()
+                        distanceScore = orsScoreParameters.distanceScore(distance)
                     )
                 )
             } else {
-                existingItem.autocompleteWorldScore = score
+                existingItem.searchWorldScore = orsRankingScore
+            }
+
+        }
+    }
+
+    fun addFromAutocompleteWorld(
+        searchString: String,
+        userPosition: LatLon?,
+        items: List<OrsSearchItem>,
+        orsScoreParameters: OrsScoreParameters,
+    ) {
+        items.forEachIndexed { index, newItem ->
+
+            val orsRankingScore = orsScoreParameters.autocompleteWorldScore(index)
+            val existingItem = getItemById(newItem.id)
+            val distance = Helpers.distance(userPosition, newItem.latLon)
+
+            if (existingItem == null) {
+                combinedList.add(
+                    ScoredOrsSearchItem(
+                        orsSearchItem = newItem,
+                        searchCountryScore = 0,
+                        autocompleteCountryScore = 0,
+                        searchWorldScore = 0,
+                        autocompleteWorldScore = orsRankingScore,
+                        similarity = orsScoreParameters.similarityScore(searchString, newItem.name),
+                        wiki = orsScoreParameters.wikiScore(newItem),
+                        distance = Helpers.distancePretty(distance),
+                        distanceScore = orsScoreParameters.distanceScore(distance)
+                    )
+                )
+            } else {
+                existingItem.autocompleteWorldScore = orsRankingScore
             }
 
         }
@@ -183,6 +259,7 @@ data class CombinedSearchData(
     var autocompleteCountryComplete: Boolean = false,
     var searchWorldComplete: Boolean = false,
     var autocompleteWorldComplete: Boolean = false,
+    val orsScoreParameters: OrsScoreParameters,
 ) {
     fun setSearchCountry(result: OrsDataState<OrsSearchItems>) {
 
@@ -191,8 +268,7 @@ data class CombinedSearchData(
                 errorMessage += result.error
             }
             is OrsDataState.OrsData -> {
-                searchCountryComplete = true
-                scoredItems.addFromSearchCountry(searchString, userPosition, result.data.items)
+                scoredItems.addFromSearchCountry(searchString, userPosition, result.data.items, orsScoreParameters)
             }
         }
         searchCountryComplete = true
@@ -204,11 +280,10 @@ data class CombinedSearchData(
                 errorMessage += result.error
             }
             is OrsDataState.OrsData -> {
-                autocompleteCountryComplete = true
-                scoredItems.addFromAutocompleteCountry(searchString, userPosition, result.data.items)
+                scoredItems.addFromAutocompleteCountry(searchString, userPosition, result.data.items, orsScoreParameters)
             }
         }
-        searchCountryComplete = true
+        autocompleteCountryComplete = true
     }
 
     fun setSearchWorld(result: OrsDataState<OrsSearchItems>) {
@@ -217,11 +292,10 @@ data class CombinedSearchData(
                 errorMessage += result.error
             }
             is OrsDataState.OrsData -> {
-                searchWorldComplete = true
-                scoredItems.addFromSearchWorld(searchString, userPosition, result.data.items)
+                scoredItems.addFromSearchWorld(searchString, userPosition, result.data.items, orsScoreParameters)
             }
         }
-        searchCountryComplete = true
+        searchWorldComplete = true
     }
 
     fun setAutocompleteWorld(result: OrsDataState<OrsSearchItems>) {
@@ -230,11 +304,10 @@ data class CombinedSearchData(
                 errorMessage += result.error
             }
             is OrsDataState.OrsData -> {
-                autocompleteWorldComplete = true
-                scoredItems.addFromAutocompleteWorld(searchString, userPosition, result.data.items)
+                scoredItems.addFromAutocompleteWorld(searchString, userPosition, result.data.items, orsScoreParameters)
             }
         }
-        searchCountryComplete = true
+        autocompleteWorldComplete = true
     }
 
     fun combinedSearchComplete(): Boolean = searchCountryComplete && autocompleteCountryComplete && searchWorldComplete && autocompleteWorldComplete
@@ -265,6 +338,7 @@ interface OrsIntermediary {
     fun combinedSearch(
         orsSearchMembers: OrsSearchMembers,
         userPosition: LatLon?,
+        orsScoreParameters: OrsScoreParameters,
         callback: (OrsDataState<ScoredOrsSearchItems>) -> Unit
     )
 
@@ -337,10 +411,11 @@ class OrsIntermediaryImpl: OrsIntermediary {
     override fun combinedSearch(
         orsSearchMembers: OrsSearchMembers,
         userPosition: LatLon?,
+        orsScoreParameters: OrsScoreParameters,
         callback: (OrsDataState<ScoredOrsSearchItems>) -> Unit
     ) {
 
-        val combinedSearchData = CombinedSearchData(searchString = orsSearchMembers.searchString, userPosition = userPosition)
+        val combinedSearchData = CombinedSearchData(searchString = orsSearchMembers.searchString, userPosition = userPosition, orsScoreParameters = orsScoreParameters)
 
         searchCountry(
             orsSearchMembers = orsSearchMembers

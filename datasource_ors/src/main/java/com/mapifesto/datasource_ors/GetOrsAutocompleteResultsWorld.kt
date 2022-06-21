@@ -50,7 +50,7 @@ class GetOrsAutocompleteResultsWorld(
                 boundaryCountry = null,
                 layers = orsSearchMembers.layers.asString(),
                 sources = orsSearchMembers.sources.asString(),
-                size = orsSearchMembers.size.toString(),
+                size = orsSearchMembers.sizeAutoCompleteWorld.toString(),
                 language = orsSearchMembers.language,
             )
         } catch (e: Exception) {

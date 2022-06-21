@@ -50,7 +50,7 @@ class GetOrsSearchResultsWorld(
                 boundaryCountry = null,
                 layers = orsSearchMembers.layers.asString(),
                 sources = orsSearchMembers.sources.asString(),
-                size = orsSearchMembers.size.toString(),
+                size = orsSearchMembers.sizeSearchWorld.toString(),
                 language = orsSearchMembers.language,
             )
         } catch (e: Exception) {

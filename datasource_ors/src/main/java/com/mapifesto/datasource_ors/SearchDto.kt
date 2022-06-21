@@ -198,13 +198,13 @@ data class SearchDto(
                val accuracy: String,
 
                @SerialName("country")
-               val country: String,
+               val country: String? = null,
 
                @SerialName("country_gid")
-               val countryGid: String,
+               val countryGid: String? = null,
 
                @SerialName("country_a")
-               val countryA: String,
+               val countryA: String? = null,
 
                @SerialName("macroregion")
                val macroregion: String? = null,
@@ -213,10 +213,10 @@ data class SearchDto(
                val macroregionGid: String? = null,
 
                @SerialName("region")
-               val region: String,
+               val region: String? = null,
 
                @SerialName("region_gid")
-               val regionGid: String,
+               val regionGid: String? = null,
 
                @SerialName("region_a")
                val regionA: String? = null,
