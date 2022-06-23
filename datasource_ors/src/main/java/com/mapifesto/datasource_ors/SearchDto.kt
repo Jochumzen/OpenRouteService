@@ -69,10 +69,10 @@ data class SearchDto(
                val querySize: Int,
 
                @SerialName("parser")
-               val parser: String,
+               val parser: String? = null,
 
                @SerialName("parsed_text")
-               val parsedText: ParsedTextDto
+               val parsedText: ParsedTextDto? = null
 
 
 
