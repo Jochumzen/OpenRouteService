@@ -3,6 +3,9 @@ package com.mapifesto.datasource_ors
 import com.mapifesto.domain.LatLon
 import com.mapifesto.domain.OrsSearchItems
 
+enum class OrsSearchCase {
+    POI, LOCATION
+}
 data class CombinedSearchData(
     val searchString: String,
     val userPosition: LatLon?,
@@ -13,6 +16,7 @@ data class CombinedSearchData(
     var searchWorldComplete: Boolean = false,
     var autocompleteWorldComplete: Boolean = false,
     val orsScoreParameters: OrsScoreParameters,
+    val case: OrsSearchCase
 ) {
     fun setSearchCountry(result: OrsDataState<OrsSearchItems>) {
 
@@ -63,5 +67,10 @@ data class CombinedSearchData(
         autocompleteWorldComplete = true
     }
 
-    fun combinedSearchComplete(): Boolean = searchCountryComplete && autocompleteCountryComplete && searchWorldComplete && autocompleteWorldComplete
+    fun combinedSearchComplete(): Boolean {
+        return when (case) {
+            OrsSearchCase.POI -> searchCountryComplete && autocompleteCountryComplete && searchWorldComplete && autocompleteWorldComplete
+            OrsSearchCase.LOCATION -> searchWorldComplete && autocompleteWorldComplete
+        }
+    }
 }

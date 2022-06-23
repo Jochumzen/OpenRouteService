@@ -286,7 +286,7 @@ fun Compose(
                             onClick = {
                                 showWhat = ""
                                 errorMsg = ""
-                                orsIntermediary.combinedSearch(
+                                orsIntermediary.combinedSearchReturningScoredItems(
                                     orsSearchMembers = OrsSearchMembers(
                                         apiKey = apiKey,
                                         searchString = outlinedText,

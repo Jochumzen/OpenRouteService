@@ -58,15 +58,24 @@ interface OrsIntermediary {
         callback: (OrsDataState<ScoredOrsSearchItems>) -> Unit
     )
 
-
-    fun combinedSearch(
-        orsSearchMembers: OrsSearchMembers,
-        userPosition: LatLon?,
-        orsScoreParameters: OrsScoreParameters,
+    fun poiSearch(
+        searchString: String,
+        focusAndUserPosition: LatLon?,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
 
-    fun handleCombinedSearch(
+    fun handlePoiSearch(
+        combinedSearchData: CombinedSearchData,
+        callback: (OrsDataState<OrsSearchItems>) -> Unit
+    )
+
+    fun locationSearch(
+        searchString: String,
+        focusAndUserPosition: LatLon?,
+        callback: (OrsDataState<OrsSearchItems>) -> Unit
+    )
+
+    fun handleLocationSearch(
         combinedSearchData: CombinedSearchData,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
@@ -137,7 +146,12 @@ class OrsIntermediaryImpl: OrsIntermediary {
         callback: (OrsDataState<ScoredOrsSearchItems>) -> Unit
     ) {
 
-        val combinedSearchData = CombinedSearchData(searchString = orsSearchMembers.searchString, userPosition = userPosition, orsScoreParameters = orsScoreParameters)
+        val combinedSearchData = CombinedSearchData(
+            searchString = orsSearchMembers.searchString,
+            userPosition = userPosition,
+            orsScoreParameters = orsScoreParameters,
+            case = OrsSearchCase.POI,
+        )
 
         searchCountry(
             orsSearchMembers = orsSearchMembers
@@ -188,14 +202,49 @@ class OrsIntermediaryImpl: OrsIntermediary {
             callback(OrsDataState.OrsData(combinedSearchData.scoredItems))
     }
 
-    override fun combinedSearch(
-        orsSearchMembers: OrsSearchMembers,
-        userPosition: LatLon?,
-        orsScoreParameters: OrsScoreParameters,
+    override fun poiSearch(
+        searchString: String,
+        focusAndUserPosition: LatLon?,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
 
-        val combinedSearchData = CombinedSearchData(searchString = orsSearchMembers.searchString, userPosition = userPosition, orsScoreParameters = orsScoreParameters)
+        val orsSearchMembers = OrsSearchMembers(
+            apiKey = "5b3ce3597851110001cf6248782b9145cbb64ba2a7b5962e1023c1de",
+            searchString = searchString,
+            boundaryCountry = "SE",
+            layers = OrsLayers(
+                address = false,
+                venue = true,
+                neighbourhood = false,
+                locality = false,
+                borough = false,
+                localadmin = false,
+                county = false,
+                macrocounty = false,
+                region = false,
+                macroregion = false,
+                country = false,
+                coarse = false,
+            ),
+            sources = OrsSources(
+                openStreetMap = true,
+                openAddresses = false,
+                whosOnFirst = false,
+                geonames = false
+            ),
+            sizeSearchCountry = 20,
+            sizeAutoCompleteCountry = 20,
+            sizeSearchWorld = 20,
+            sizeAutoCompleteWorld = 20,
+            language = "en-US",
+            focus = focusAndUserPosition
+        )
+        val combinedSearchData = CombinedSearchData(
+            searchString = searchString,
+            userPosition = focusAndUserPosition,
+            orsScoreParameters = OrsScoreParameters(),
+            case = OrsSearchCase.POI,
+        )
 
         searchCountry(
             orsSearchMembers = orsSearchMembers
@@ -203,7 +252,7 @@ class OrsIntermediaryImpl: OrsIntermediary {
             combinedSearchData.setSearchCountry(it)
 
             if (combinedSearchData.combinedSearchComplete())
-                handleCombinedSearch(combinedSearchData, callback)
+                handlePoiSearch(combinedSearchData, callback)
 
         }
 
@@ -213,7 +262,7 @@ class OrsIntermediaryImpl: OrsIntermediary {
             combinedSearchData.setAutocompleteCountry(it)
 
             if (combinedSearchData.combinedSearchComplete())
-                handleCombinedSearch(combinedSearchData, callback)
+                handlePoiSearch(combinedSearchData, callback)
         }
 
         searchWorld(
@@ -222,7 +271,7 @@ class OrsIntermediaryImpl: OrsIntermediary {
             combinedSearchData.setSearchWorld(it)
 
             if (combinedSearchData.combinedSearchComplete())
-                handleCombinedSearch(combinedSearchData, callback)
+                handlePoiSearch(combinedSearchData, callback)
         }
 
         autocompleteWorld(
@@ -231,20 +280,97 @@ class OrsIntermediaryImpl: OrsIntermediary {
             combinedSearchData.setAutocompleteWorld(it)
 
             if (combinedSearchData.combinedSearchComplete())
-                handleCombinedSearch(combinedSearchData, callback)
+                handlePoiSearch(combinedSearchData, callback)
         }
     }
 
-    override fun handleCombinedSearch(
+    override fun handlePoiSearch(
         combinedSearchData: CombinedSearchData,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
         if(combinedSearchData.errorMessage != null)
             callback(OrsDataState.Error(combinedSearchData.errorMessage!!))
-        else
+        else {
             combinedSearchData.scoredItems.sortByScore()
+            callback(OrsDataState.OrsData(OrsSearchItems(items = combinedSearchData.scoredItems.combinedList.map { it.orsSearchItem } )))
+        }
+    }
 
-        callback(OrsDataState.OrsData(OrsSearchItems(items = combinedSearchData.scoredItems.combinedList.map { it.orsSearchItem } )))
+    override fun locationSearch(
+        searchString: String,
+        focusAndUserPosition: LatLon?,
+        callback: (OrsDataState<OrsSearchItems>) -> Unit
+    ) {
+
+        val orsSearchMembers = OrsSearchMembers(
+            apiKey = "5b3ce3597851110001cf6248782b9145cbb64ba2a7b5962e1023c1de",
+            searchString = searchString,
+            layers = OrsLayers(
+                address = false,
+                venue = false,
+                neighbourhood = false,
+                locality = false,
+                borough = false,
+                localadmin = false,
+                county = false,
+                macrocounty = false,
+                region = false,
+                macroregion = false,
+                country = false,
+                coarse = true,
+            ),
+            sources = OrsSources(
+                openStreetMap = false,
+                openAddresses = false,
+                whosOnFirst = true,
+                geonames = false
+            ),
+            sizeSearchCountry = 20,
+            sizeAutoCompleteCountry = 20,
+            sizeSearchWorld = 20,
+            sizeAutoCompleteWorld = 20,
+            language = "en-US",
+            focus = focusAndUserPosition
+        )
+        val combinedSearchData = CombinedSearchData(
+            searchString = searchString,
+            userPosition = focusAndUserPosition,
+            orsScoreParameters = OrsScoreParameters(),
+            case = OrsSearchCase.LOCATION
+        )
+
+        searchWorld(
+            orsSearchMembers = orsSearchMembers
+        ) {
+            combinedSearchData.setSearchWorld(it)
+
+            if (combinedSearchData.combinedSearchComplete())
+                handleLocationSearch(combinedSearchData, callback)
+        }
+
+        autocompleteWorld(
+            orsSearchMembers = orsSearchMembers
+        ) {
+            combinedSearchData.setAutocompleteWorld(it)
+
+            if (combinedSearchData.combinedSearchComplete())
+                handleLocationSearch(combinedSearchData, callback)
+        }
+    }
+
+    override fun handleLocationSearch(
+        combinedSearchData: CombinedSearchData,
+        callback: (OrsDataState<OrsSearchItems>) -> Unit
+    ) {
+        if(combinedSearchData.errorMessage != null)
+            callback(OrsDataState.Error(combinedSearchData.errorMessage!!))
+        else {
+            combinedSearchData.scoredItems.sortByScore()
+            callback(OrsDataState.OrsData(OrsSearchItems(items = combinedSearchData.scoredItems.combinedList.map { it.orsSearchItem } )))
+        }
+
+
+
     }
 }
 
@@ -293,16 +419,32 @@ class OrsIntermediaryMockup: OrsIntermediary {
         TODO("Not yet implemented")
     }
 
-    override fun combinedSearch(
-        orsSearchMembers: OrsSearchMembers,
-        userPosition: LatLon?,
-        orsScoreParameters: OrsScoreParameters,
+    override fun poiSearch(
+        searchString: String,
+        focusAndUserPosition: LatLon?,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
         TODO("Not yet implemented")
     }
 
-    override fun handleCombinedSearch(
+
+    override fun handlePoiSearch(
+        combinedSearchData: CombinedSearchData,
+        callback: (OrsDataState<OrsSearchItems>) -> Unit
+    ) {
+        TODO("Not yet implemented")
+    }
+
+    override fun locationSearch(
+        searchString: String,
+        focusAndUserPosition: LatLon?,
+        callback: (OrsDataState<OrsSearchItems>) -> Unit
+    ) {
+        TODO("Not yet implemented")
+    }
+
+
+    override fun handleLocationSearch(
         combinedSearchData: CombinedSearchData,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {

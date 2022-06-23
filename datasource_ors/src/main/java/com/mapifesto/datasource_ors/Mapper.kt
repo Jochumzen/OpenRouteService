@@ -21,6 +21,10 @@ object Mapper {
                         country = it.properties.country,
                         city = it.properties.locality,
                         wikiId = it.properties.addendum?.osm?.wikidata,
+                        region = it.properties.region,
+                        county = it.properties.county,
+                        layer = it.properties.layer,
+                        gid = it.properties.gid,
                     )
                 }
         )
