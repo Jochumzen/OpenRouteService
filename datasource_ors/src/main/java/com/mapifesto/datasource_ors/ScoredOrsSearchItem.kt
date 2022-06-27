@@ -95,7 +95,7 @@ data class ScoredOrsSearchItems(
         }
     }
 
-    fun addFromSearchWorld(
+    fun addFromSearch(
         searchString: String,
         userPosition: LatLon?,
         items: List<OrsSearchItem>,
@@ -128,7 +128,7 @@ data class ScoredOrsSearchItems(
         }
     }
 
-    fun addFromAutocompleteWorld(
+    fun addFromAutocomplete(
         searchString: String,
         userPosition: LatLon?,
         items: List<OrsSearchItem>,

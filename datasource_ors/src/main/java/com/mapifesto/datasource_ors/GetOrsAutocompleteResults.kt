@@ -4,17 +4,17 @@ import com.mapifesto.domain.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-class GetOrsSearchResultsWorld(
+class GetOrsAutocompleteResults(
     private val service: OrsService,
 ) {
     fun execute(
-        orsSearchMembers: OrsSearchMembers,
+        orsSearchMembers: OrsSearchMembers
     ): Flow<OrsDataState<OrsSearchItems>> = flow {
 
         var errorMessage: String? = null
 
         val orsSearchDtoResult: SearchDto? = try {
-            service.search(
+            service.autocomplete(
                 apiKey = orsSearchMembers.apiKey,
                 text = orsSearchMembers.searchString,
                 focusPointLon = orsSearchMembers.focus?.let {
@@ -47,10 +47,12 @@ class GetOrsSearchResultsWorld(
                 boundaryGid = orsSearchMembers.boundaryGid?.let {
                     it
                 },
-                boundaryCountry = null,
+                boundaryCountry = orsSearchMembers.boundaryCountry?.let {
+                    it
+                },
                 layers = orsSearchMembers.layers.asString(),
                 sources = orsSearchMembers.sources.asString(),
-                size = orsSearchMembers.sizeSearchWorld.toString(),
+                size = orsSearchMembers.sizeAutoCompleteCountry.toString(),
                 language = orsSearchMembers.language,
             )
         } catch (e: Exception) {

@@ -105,7 +105,7 @@ data class SearchDto(
                     val city: String? = null,
 
                     @SerialName("subject")
-                    val subject: String,
+                    val subject: String? = null,
 
                     @SerialName("street")
                     val street: String? = null,

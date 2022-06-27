@@ -19,6 +19,7 @@ object Mapper {
                             lat = it.geometry.coordinates[1]
                         ),
                         country = it.properties.country,
+                        locality = it.properties.locality,
                         city = it.properties.locality,
                         wikiId = it.properties.addendum?.osm?.wikidata,
                         region = it.properties.region,

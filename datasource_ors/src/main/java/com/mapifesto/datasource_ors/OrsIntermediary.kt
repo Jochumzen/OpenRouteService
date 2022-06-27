@@ -22,30 +22,31 @@ data class OrsSearchMembers(
     val sizeSearchWorld: Int,
     val sizeAutoCompleteWorld: Int,
     val language: String,
-)
+) {
+    fun removeBoundaryCountry(): OrsSearchMembers {
+        return this.copy(boundaryCountry = null)
+    }
+}
+
+enum class FullSearchCase {
+    POI, LOCATION
+}
 
 interface OrsIntermediary {
 
-    fun searchCountry(
+    //This method is a straight implementation of the interactor GetOrsSearchResult which is a straight implementation of OpenRouteService /geocode/search
+    fun search(
         orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
 
-    fun autocompleteCountry(
+    //This method is a straight implementation of the interactor GetOrsAutoCompleteResult which is a straight implementation of OpenRouteService /geocode/autocomplete
+    fun autocomplete(
         orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
 
-    fun searchWorld(
-        orsSearchMembers: OrsSearchMembers,
-        callback: (OrsDataState<OrsSearchItems>) -> Unit
-    )
-
-    fun autocompleteWorld(
-        orsSearchMembers: OrsSearchMembers,
-        callback: (OrsDataState<OrsSearchItems>) -> Unit
-    )
-
+    //This method is used only in this project to evaluate the scoring system for combining search-results
     fun combinedSearchReturningScoredItems(
         orsSearchMembers: OrsSearchMembers,
         userPosition: LatLon?,
@@ -53,28 +54,37 @@ interface OrsIntermediary {
         callback: (OrsDataState<ScoredOrsSearchItems>) -> Unit
     )
 
+    //This method is used only in this project to evaluate the scoring system for combining search-results
     fun handleCombinedSearchReturningScoredItems(
         combinedSearchData: CombinedSearchData,
         callback: (OrsDataState<ScoredOrsSearchItems>) -> Unit
     )
 
-    fun poiSearch(
+    //This is the main method used by Search in MapiGanja
+    fun fullSearch(
         searchString: String,
         focusAndUserPosition: LatLon?,
+        fullSearchCase: FullSearchCase,
+        boundingBox: BoundingBox?,
+        searchRadius: Float?,
+        areaRestrictions: List<String>,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
 
-    fun handlePoiSearch(
+    //This is the main method used by Search in MapiGanja
+    fun handleFullSearch(
         combinedSearchData: CombinedSearchData,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
 
+    //This method is used in MapiGanja to find an area/location. Used in SearchSettings to restrict area.
     fun locationSearch(
         searchString: String,
         focusAndUserPosition: LatLon?,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     )
 
+    //This method is used in MapiGanja to find an area/location. Used in SearchSettings to restrict area.
     fun handleLocationSearch(
         combinedSearchData: CombinedSearchData,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
@@ -83,11 +93,11 @@ interface OrsIntermediary {
 
 class OrsIntermediaryImpl: OrsIntermediary {
 
-    override fun searchCountry(
+    override fun search(
         orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
-        val getOrsSearchResultsCountry = OrsInteractors.build().getOrsSearchResultsCountry
+        val getOrsSearchResultsCountry = OrsInteractors.build().getOrsSearchResults
         getOrsSearchResultsCountry.execute(
             orsSearchMembers = orsSearchMembers
         ).onEach { dataState ->
@@ -97,40 +107,13 @@ class OrsIntermediaryImpl: OrsIntermediary {
         }.launchIn(CoroutineScope(Dispatchers.Main))
     }
 
-    override fun autocompleteCountry(
+
+    override fun autocomplete(
         orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
-        val getOrsAutocompleteResultsCountry = OrsInteractors.build().getOrsAutocompleteResultsCountry
+        val getOrsAutocompleteResultsCountry = OrsInteractors.build().getOrsAutocompleteResults
         getOrsAutocompleteResultsCountry.execute(
-            orsSearchMembers = orsSearchMembers
-        ).onEach { dataState ->
-
-            callback(dataState)
-
-        }.launchIn(CoroutineScope(Dispatchers.Main))
-    }
-
-    override fun searchWorld(
-        orsSearchMembers: OrsSearchMembers,
-        callback: (OrsDataState<OrsSearchItems>) -> Unit
-    ) {
-        val getOrsSearchResultsWorld = OrsInteractors.build().getOrsSearchResultsWorld
-        getOrsSearchResultsWorld.execute(
-            orsSearchMembers = orsSearchMembers
-        ).onEach { dataState ->
-
-            callback(dataState)
-
-        }.launchIn(CoroutineScope(Dispatchers.Main))
-    }
-
-    override fun autocompleteWorld(
-        orsSearchMembers: OrsSearchMembers,
-        callback: (OrsDataState<OrsSearchItems>) -> Unit
-    ) {
-        val getOrsAutocompleteResultsWorld = OrsInteractors.build().getOrsAutocompleteResultsWorld
-        getOrsAutocompleteResultsWorld.execute(
             orsSearchMembers = orsSearchMembers
         ).onEach { dataState ->
 
@@ -150,10 +133,11 @@ class OrsIntermediaryImpl: OrsIntermediary {
             searchString = orsSearchMembers.searchString,
             userPosition = userPosition,
             orsScoreParameters = orsScoreParameters,
-            case = OrsSearchCase.POI,
+            includeCountrySearch = true,
         )
 
-        searchCountry(
+        //Search: Country
+        search(
             orsSearchMembers = orsSearchMembers
         ) {
             combinedSearchData.setSearchCountry(it)
@@ -163,7 +147,8 @@ class OrsIntermediaryImpl: OrsIntermediary {
 
         }
 
-        autocompleteCountry(
+        //AutoComplete: Country
+        autocomplete(
             orsSearchMembers = orsSearchMembers
         ) {
             combinedSearchData.setAutocompleteCountry(it)
@@ -172,19 +157,21 @@ class OrsIntermediaryImpl: OrsIntermediary {
                 handleCombinedSearchReturningScoredItems(combinedSearchData, callback)
         }
 
-        searchWorld(
-            orsSearchMembers = orsSearchMembers
+        //Search: World
+        search(
+            orsSearchMembers = orsSearchMembers.removeBoundaryCountry()
         ) {
-            combinedSearchData.setSearchWorld(it)
+            combinedSearchData.setSearch(it)
 
             if (combinedSearchData.combinedSearchComplete())
                 handleCombinedSearchReturningScoredItems(combinedSearchData, callback)
         }
 
-        autocompleteWorld(
-            orsSearchMembers = orsSearchMembers
+        //Autocomplete: World
+        autocomplete(
+            orsSearchMembers = orsSearchMembers.removeBoundaryCountry()
         ) {
-            combinedSearchData.setAutocompleteWorld(it)
+            combinedSearchData.setAutocomplete(it)
 
             if (combinedSearchData.combinedSearchComplete())
                 handleCombinedSearchReturningScoredItems(combinedSearchData, callback)
@@ -202,89 +189,95 @@ class OrsIntermediaryImpl: OrsIntermediary {
             callback(OrsDataState.OrsData(combinedSearchData.scoredItems))
     }
 
-    override fun poiSearch(
+    override fun fullSearch(
         searchString: String,
         focusAndUserPosition: LatLon?,
+        fullSearchCase: FullSearchCase,
+        boundingBox: BoundingBox?,
+        searchRadius: Float?,
+        areaRestrictions: List<String>,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
+
+        val layers = when(fullSearchCase) {
+            FullSearchCase.POI -> OrsLayers.createOnlyVenue()
+            FullSearchCase.LOCATION -> OrsLayers.createOnlyCourse()
+        }
+
+        val sources = when(fullSearchCase) {
+            FullSearchCase.POI -> OrsSources.createOnlyOSM()
+            FullSearchCase.LOCATION -> OrsSources.createOnlyWhosOnFirst()
+        }
+
+        val includeCountrySearch = false //fullSearchCase == FullSearchCase.POI && boundingBox == null && searchRadius == null && areaRestrictions.isEmpty()
 
         val orsSearchMembers = OrsSearchMembers(
             apiKey = "5b3ce3597851110001cf6248782b9145cbb64ba2a7b5962e1023c1de",
             searchString = searchString,
-            boundaryCountry = "SE",
-            layers = OrsLayers(
-                address = false,
-                venue = true,
-                neighbourhood = false,
-                locality = false,
-                borough = false,
-                localadmin = false,
-                county = false,
-                macrocounty = false,
-                region = false,
-                macroregion = false,
-                country = false,
-                coarse = false,
-            ),
-            sources = OrsSources(
-                openStreetMap = true,
-                openAddresses = false,
-                whosOnFirst = false,
-                geonames = false
-            ),
+            layers = layers,
+            sources = sources,
             sizeSearchCountry = 20,
             sizeAutoCompleteCountry = 20,
             sizeSearchWorld = 20,
             sizeAutoCompleteWorld = 20,
+            boundaryRectangle = boundingBox,
+            boundaryCircle = if(searchRadius == null) null else focusAndUserPosition,
+            boundaryCircleRadius = searchRadius?.toDouble(),
+            boundaryGid = if(areaRestrictions.isEmpty()) null else areaRestrictions.first(),
             language = "en-US",
             focus = focusAndUserPosition
         )
+
         val combinedSearchData = CombinedSearchData(
             searchString = searchString,
             userPosition = focusAndUserPosition,
             orsScoreParameters = OrsScoreParameters(),
-            case = OrsSearchCase.POI,
+            includeCountrySearch = includeCountrySearch,
         )
 
-        searchCountry(
-            orsSearchMembers = orsSearchMembers
+        search(
+            orsSearchMembers = orsSearchMembers.removeBoundaryCountry()
         ) {
-            combinedSearchData.setSearchCountry(it)
+            combinedSearchData.setSearch(it)
 
             if (combinedSearchData.combinedSearchComplete())
-                handlePoiSearch(combinedSearchData, callback)
+                handleFullSearch(combinedSearchData, callback)
 
         }
 
-        autocompleteCountry(
-            orsSearchMembers = orsSearchMembers
+        autocomplete(
+            orsSearchMembers = orsSearchMembers.removeBoundaryCountry()
         ) {
-            combinedSearchData.setAutocompleteCountry(it)
+            combinedSearchData.setAutocomplete(it)
 
             if (combinedSearchData.combinedSearchComplete())
-                handlePoiSearch(combinedSearchData, callback)
+                handleFullSearch(combinedSearchData, callback)
         }
 
-        searchWorld(
-            orsSearchMembers = orsSearchMembers
-        ) {
-            combinedSearchData.setSearchWorld(it)
+        if(includeCountrySearch) {
+            search(
+                orsSearchMembers = orsSearchMembers
+            ) {
+                combinedSearchData.setSearchCountry(it)
 
-            if (combinedSearchData.combinedSearchComplete())
-                handlePoiSearch(combinedSearchData, callback)
+                if (combinedSearchData.combinedSearchComplete())
+                    handleFullSearch(combinedSearchData, callback)
+            }
+
+            autocomplete(
+                orsSearchMembers = orsSearchMembers
+            ) {
+                combinedSearchData.setAutocompleteCountry(it)
+
+                if (combinedSearchData.combinedSearchComplete())
+                    handleFullSearch(combinedSearchData, callback)
+            }
         }
 
-        autocompleteWorld(
-            orsSearchMembers = orsSearchMembers
-        ) {
-            combinedSearchData.setAutocompleteWorld(it)
 
-            if (combinedSearchData.combinedSearchComplete())
-                handlePoiSearch(combinedSearchData, callback)
-        }
     }
 
-    override fun handlePoiSearch(
+    override fun handleFullSearch(
         combinedSearchData: CombinedSearchData,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
@@ -305,26 +298,8 @@ class OrsIntermediaryImpl: OrsIntermediary {
         val orsSearchMembers = OrsSearchMembers(
             apiKey = "5b3ce3597851110001cf6248782b9145cbb64ba2a7b5962e1023c1de",
             searchString = searchString,
-            layers = OrsLayers(
-                address = false,
-                venue = false,
-                neighbourhood = false,
-                locality = false,
-                borough = false,
-                localadmin = false,
-                county = false,
-                macrocounty = false,
-                region = false,
-                macroregion = false,
-                country = false,
-                coarse = true,
-            ),
-            sources = OrsSources(
-                openStreetMap = false,
-                openAddresses = false,
-                whosOnFirst = true,
-                geonames = false
-            ),
+            layers = OrsLayers.createOnlyCourse(),
+            sources = OrsSources.createOnlyWhosOnFirst(),
             sizeSearchCountry = 20,
             sizeAutoCompleteCountry = 20,
             sizeSearchWorld = 20,
@@ -336,22 +311,22 @@ class OrsIntermediaryImpl: OrsIntermediary {
             searchString = searchString,
             userPosition = focusAndUserPosition,
             orsScoreParameters = OrsScoreParameters(),
-            case = OrsSearchCase.LOCATION
+            includeCountrySearch = false,
         )
 
-        searchWorld(
+        search(
             orsSearchMembers = orsSearchMembers
         ) {
-            combinedSearchData.setSearchWorld(it)
+            combinedSearchData.setSearch(it)
 
             if (combinedSearchData.combinedSearchComplete())
                 handleLocationSearch(combinedSearchData, callback)
         }
 
-        autocompleteWorld(
+        autocomplete(
             orsSearchMembers = orsSearchMembers
         ) {
-            combinedSearchData.setAutocompleteWorld(it)
+            combinedSearchData.setAutocomplete(it)
 
             if (combinedSearchData.combinedSearchComplete())
                 handleLocationSearch(combinedSearchData, callback)
@@ -375,28 +350,14 @@ class OrsIntermediaryImpl: OrsIntermediary {
 }
 
 class OrsIntermediaryMockup: OrsIntermediary {
-    override fun searchCountry(
+    override fun search(
         orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
         TODO("Not yet implemented")
     }
 
-    override fun autocompleteCountry(
-        orsSearchMembers: OrsSearchMembers,
-        callback: (OrsDataState<OrsSearchItems>) -> Unit
-    ) {
-        TODO("Not yet implemented")
-    }
-
-    override fun searchWorld(
-        orsSearchMembers: OrsSearchMembers,
-        callback: (OrsDataState<OrsSearchItems>) -> Unit
-    ) {
-        TODO("Not yet implemented")
-    }
-
-    override fun autocompleteWorld(
+    override fun autocomplete(
         orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
@@ -419,16 +380,20 @@ class OrsIntermediaryMockup: OrsIntermediary {
         TODO("Not yet implemented")
     }
 
-    override fun poiSearch(
+    override fun fullSearch(
         searchString: String,
         focusAndUserPosition: LatLon?,
+        fullSearchCase: FullSearchCase,
+        boundingBox: BoundingBox?,
+        searchRadius: Float?,
+        areaRestrictions: List<String>,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
         TODO("Not yet implemented")
     }
 
 
-    override fun handlePoiSearch(
+    override fun handleFullSearch(
         combinedSearchData: CombinedSearchData,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {

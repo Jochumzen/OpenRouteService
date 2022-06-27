@@ -3,9 +3,6 @@ package com.mapifesto.datasource_ors
 import com.mapifesto.domain.LatLon
 import com.mapifesto.domain.OrsSearchItems
 
-enum class OrsSearchCase {
-    POI, LOCATION
-}
 data class CombinedSearchData(
     val searchString: String,
     val userPosition: LatLon?,
@@ -13,10 +10,10 @@ data class CombinedSearchData(
     var errorMessage: String? = null,
     var searchCountryComplete: Boolean = false,
     var autocompleteCountryComplete: Boolean = false,
-    var searchWorldComplete: Boolean = false,
-    var autocompleteWorldComplete: Boolean = false,
+    var searchComplete: Boolean = false,
+    var autocompleteComplete: Boolean = false,
     val orsScoreParameters: OrsScoreParameters,
-    val case: OrsSearchCase
+    val includeCountrySearch: Boolean
 ) {
     fun setSearchCountry(result: OrsDataState<OrsSearchItems>) {
 
@@ -43,34 +40,34 @@ data class CombinedSearchData(
         autocompleteCountryComplete = true
     }
 
-    fun setSearchWorld(result: OrsDataState<OrsSearchItems>) {
+    fun setSearch(result: OrsDataState<OrsSearchItems>) {
         when(result) {
             is OrsDataState.Error -> {
                 errorMessage += result.error
             }
             is OrsDataState.OrsData -> {
-                scoredItems.addFromSearchWorld(searchString, userPosition, result.data.items, orsScoreParameters)
+                scoredItems.addFromSearch(searchString, userPosition, result.data.items, orsScoreParameters)
             }
         }
-        searchWorldComplete = true
+        searchComplete = true
     }
 
-    fun setAutocompleteWorld(result: OrsDataState<OrsSearchItems>) {
+    fun setAutocomplete(result: OrsDataState<OrsSearchItems>) {
         when(result) {
             is OrsDataState.Error -> {
                 errorMessage += result.error
             }
             is OrsDataState.OrsData -> {
-                scoredItems.addFromAutocompleteWorld(searchString, userPosition, result.data.items, orsScoreParameters)
+                scoredItems.addFromAutocomplete(searchString, userPosition, result.data.items, orsScoreParameters)
             }
         }
-        autocompleteWorldComplete = true
+        autocompleteComplete = true
     }
 
     fun combinedSearchComplete(): Boolean {
-        return when (case) {
-            OrsSearchCase.POI -> searchCountryComplete && autocompleteCountryComplete && searchWorldComplete && autocompleteWorldComplete
-            OrsSearchCase.LOCATION -> searchWorldComplete && autocompleteWorldComplete
-        }
+        return if (includeCountrySearch)
+            searchCountryComplete && autocompleteCountryComplete && searchComplete && autocompleteComplete
+        else
+            searchComplete && autocompleteComplete
     }
 }

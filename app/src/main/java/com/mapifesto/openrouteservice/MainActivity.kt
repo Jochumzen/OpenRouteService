@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mapifesto.datasource_ors.*
 import com.mapifesto.domain.LatLon
@@ -158,7 +157,7 @@ fun Compose(
                             onClick = {
                                 showWhat = ""
                                 errorMsg = ""
-                                orsIntermediary.searchCountry(
+                                orsIntermediary.search(
                                     orsSearchMembers = OrsSearchMembers(
                                         apiKey = apiKey,
                                         searchString = outlinedText,
@@ -192,7 +191,7 @@ fun Compose(
                             onClick = {
                                 showWhat = ""
                                 errorMsg = ""
-                                orsIntermediary.autocompleteCountry(
+                                orsIntermediary.autocomplete(
                                     orsSearchMembers = OrsSearchMembers(
                                         apiKey = apiKey,
                                         searchString = outlinedText,
@@ -225,7 +224,7 @@ fun Compose(
                             onClick = {
                                 showWhat = ""
                                 errorMsg = ""
-                                orsIntermediary.searchWorld(
+                                orsIntermediary.search(
                                     orsSearchMembers = OrsSearchMembers(
                                         apiKey = apiKey,
                                         searchString = outlinedText,
@@ -256,7 +255,7 @@ fun Compose(
                             onClick = {
                                 showWhat = ""
                                 errorMsg = ""
-                                orsIntermediary.autocompleteWorld(
+                                orsIntermediary.autocomplete(
                                     orsSearchMembers = OrsSearchMembers(
                                         apiKey = apiKey,
                                         searchString = outlinedText,
