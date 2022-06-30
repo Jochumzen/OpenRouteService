@@ -28,7 +28,7 @@ class OrsServiceImpl(
         size: String?,
         language: String,
     ): SearchDto {
-
+        val z = 1
         return httpClient.get {
             url("$SEARCH")
             header(key = "Accept-Language", value = language)
@@ -36,10 +36,10 @@ class OrsServiceImpl(
             parameter(key = "text", value = text)
             parameter(key = "focus.point.lon", value = focusPointLon)
             parameter(key = "focus.point.lat", value = focusPointLat)
-            parameter(key = "boundary.rect.min.lon", value = boundaryRectMinLon)
-            parameter(key = "boundary.rect.min.lat", value = boundaryRectMinLat)
-            parameter(key = "boundary.rect.max.lon", value = boundaryRectMaxLon)
-            parameter(key = "boundary.rect.max.lat", value = boundaryRectMaxLat)
+            parameter(key = "boundary.rect.min_lon", value = boundaryRectMinLon)
+            parameter(key = "boundary.rect.min_lat", value = boundaryRectMinLat)
+            parameter(key = "boundary.rect.max_lon", value = boundaryRectMaxLon)
+            parameter(key = "boundary.rect.max_lat", value = boundaryRectMaxLat)
             parameter(key = "boundary.circle.lon", value = boundaryCircleLon)
             parameter(key = "boundary.circle.lat", value = boundaryCircleLat)
             parameter(key = "boundary.circle.radius", value = boundaryCircleRadius)
@@ -78,10 +78,10 @@ class OrsServiceImpl(
             parameter(key = "text", value = text)
             parameter(key = "focus.point.lon", value = focusPointLon)
             parameter(key = "focus.point.lat", value = focusPointLat)
-            parameter(key = "boundary.rect.min.lon", value = boundaryRectMinLon)
-            parameter(key = "boundary.rect.min.lat", value = boundaryRectMinLat)
-            parameter(key = "boundary.rect.max.lon", value = boundaryRectMaxLon)
-            parameter(key = "boundary.rect.max.lat", value = boundaryRectMaxLat)
+            parameter(key = "boundary.rect.min_lon", value = boundaryRectMinLon)
+            parameter(key = "boundary.rect.min_lat", value = boundaryRectMinLat)
+            parameter(key = "boundary.rect.max_lon", value = boundaryRectMaxLon)
+            parameter(key = "boundary.rect.max_lat", value = boundaryRectMaxLat)
             parameter(key = "boundary.circle.lon", value = boundaryCircleLon)
             parameter(key = "boundary.circle.lat", value = boundaryCircleLat)
             parameter(key = "boundary.circle.radius", value = boundaryCircleRadius)

@@ -26,6 +26,8 @@ object Mapper {
                         county = it.properties.county,
                         layer = it.properties.layer,
                         gid = it.properties.gid,
+                        street = it.properties.street,
+                        houseNumber = it.properties.housenumber,
                     )
                 }
         )

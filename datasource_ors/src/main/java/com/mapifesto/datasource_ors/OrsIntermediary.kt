@@ -97,8 +97,8 @@ class OrsIntermediaryImpl: OrsIntermediary {
         orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
-        val getOrsSearchResultsCountry = OrsInteractors.build().getOrsSearchResults
-        getOrsSearchResultsCountry.execute(
+        val getOrsSearchResults = OrsInteractors.build().getOrsSearchResults
+        getOrsSearchResults.execute(
             orsSearchMembers = orsSearchMembers
         ).onEach { dataState ->
 
@@ -112,8 +112,8 @@ class OrsIntermediaryImpl: OrsIntermediary {
         orsSearchMembers: OrsSearchMembers,
         callback: (OrsDataState<OrsSearchItems>) -> Unit
     ) {
-        val getOrsAutocompleteResultsCountry = OrsInteractors.build().getOrsAutocompleteResults
-        getOrsAutocompleteResultsCountry.execute(
+        val getOrsAutocompleteResults = OrsInteractors.build().getOrsAutocompleteResults
+        getOrsAutocompleteResults.execute(
             orsSearchMembers = orsSearchMembers
         ).onEach { dataState ->
 

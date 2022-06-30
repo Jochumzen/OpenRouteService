@@ -49,7 +49,7 @@ interface OrsService {
         language: String,
     ): SearchDto
 
-    suspend fun reverseGeocode(
+/*    suspend fun reverseGeocode(
         apiKey: String,
         pointLon: String,
         pointLat: String,
@@ -58,7 +58,7 @@ interface OrsService {
         layers: String?,
         sources: String?,
         boundaryCountry: String?,
-    )
+    )*/
 
     companion object Factory {
         fun build(): OrsService {
